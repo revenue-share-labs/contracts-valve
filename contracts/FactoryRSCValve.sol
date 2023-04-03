@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity ^0.8.4;
+pragma solidity ^0.8.19;
 
 import "@openzeppelin/contracts/proxy/Clones.sol";
-import "contracts/revenue-share-contracts/RSCValve.sol";
+import "./RSCValve.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 
