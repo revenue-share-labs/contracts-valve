@@ -7,7 +7,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract TestToken is ERC20, Ownable {
     address public minter;
-    uint256 constant public MAX_SUPPLY = 5 * 1e12 * 1e18;  // 5 trilion
+    uint256 public constant MAX_SUPPLY = 5 * 1e12 * 1e18; // 5 trilion
 
     constructor() ERC20("TokenX", "TX") {
         minter = address(0);
@@ -16,7 +16,7 @@ contract TestToken is ERC20, Ownable {
     /**
      * @dev Throws if sender is not minter
      */
-    modifier onlyMinter {
+    modifier onlyMinter() {
         require(msg.sender == minter, "Sender is not minter");
         _;
     }
@@ -27,7 +27,10 @@ contract TestToken is ERC20, Ownable {
      * @param _amount amount of tokens to mint
      */
     function mint(address _to, uint256 _amount) external onlyMinter {
-        require(MAX_SUPPLY >= totalSupply() + _amount, "MAX_SUPPLY was reached, unable to mint more tokens");
+        require(
+            MAX_SUPPLY >= totalSupply() + _amount,
+            "MAX_SUPPLY was reached, unable to mint more tokens"
+        );
         _mint(_to, _amount);
     }
 
@@ -39,5 +42,4 @@ contract TestToken is ERC20, Ownable {
         require(minter == address(0), "Minter already configured");
         minter = _minter;
     }
-
 }
