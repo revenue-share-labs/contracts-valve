@@ -1,13 +1,8 @@
 name: Coverage
+
 on:
-  push:
-    paths:
-      - "contracts/**"
-      - "tests/**"
-  pull_request:
-    paths:
-      - "contracts/**"
-      - "tests/**"
+  - push
+  - pull_request
 
 jobs:
   build:
