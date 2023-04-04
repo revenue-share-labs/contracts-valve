@@ -1,7 +1,7 @@
 name: Static Analysis
 on:
   push:
-    branches: [main]
+    branches: [main, ci]
     paths:
       - "contracts/**"
       - ".github/workflows/slither.yaml"
