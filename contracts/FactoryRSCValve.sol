@@ -1,11 +1,10 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity ^0.8.4;
+pragma solidity ^0.8.19;
 
 import "@openzeppelin/contracts/proxy/Clones.sol";
-import "contracts/revenue-share-contracts/RSCValve.sol";
+import "./RSCValve.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-
 
 contract XLARSCValveFactory is Ownable {
     address payable public immutable contractImplementation;
@@ -19,7 +18,7 @@ contract XLARSCValveFactory is Ownable {
         bool isImmutableRecipients;
         bool isAutoNativeCurrencyDistribution;
         uint256 minAutoDistributeAmount;
-        address payable [] initialRecipients;
+        address payable[] initialRecipients;
         uint256[] percentages;
         bytes32 creationId;
     }
@@ -35,10 +34,7 @@ contract XLARSCValveFactory is Ownable {
         bytes32 creationId
     );
 
-    event PlatformFeeChanged(
-        uint256 oldFee,
-        uint256 newFee
-    );
+    event PlatformFeeChanged(uint256 oldFee, uint256 newFee);
 
     event PlatformWalletChanged(
         address payable oldPlatformWallet,
@@ -57,8 +53,12 @@ contract XLARSCValveFactory is Ownable {
      * @param _data RSC Create data used for hashing and getting random salt
      * @param _deployer Wallet address that want to create new RSC contract
      */
-    function _getSalt(RSCCreateData memory _data, address _deployer) internal pure returns(bytes32) {
-        bytes32 hash = keccak256(abi.encodePacked(
+    function _getSalt(
+        RSCCreateData memory _data,
+        address _deployer
+    ) internal pure returns (bytes32) {
+        bytes32 hash = keccak256(
+            abi.encodePacked(
                 _data.controller,
                 _data.distributors,
                 _data.isImmutableRecipients,
@@ -68,7 +68,8 @@ contract XLARSCValveFactory is Ownable {
                 _data.percentages,
                 _data.creationId,
                 _deployer
-            ));
+            )
+        );
         return hash;
     }
 
@@ -77,9 +78,15 @@ contract XLARSCValveFactory is Ownable {
      * @param _data RSC Create data used for hashing and getting random salt
      * @param _deployer Wallet address that want to create new RSC contract
      */
-    function predictDeterministicAddress(RSCCreateData memory _data, address _deployer) external view returns(address) {
+    function predictDeterministicAddress(
+        RSCCreateData memory _data,
+        address _deployer
+    ) external view returns (address) {
         bytes32 salt = _getSalt(_data, _deployer);
-        address predictedAddress = Clones.predictDeterministicAddress(contractImplementation, salt);
+        address predictedAddress = Clones.predictDeterministicAddress(
+            contractImplementation,
+            salt
+        );
         return predictedAddress;
     }
 
@@ -87,14 +94,17 @@ contract XLARSCValveFactory is Ownable {
      * @dev Public function for creating clone proxy pointing to RSC Percentage
      * @param _data Initial data for creating new RSC Valve contract
      */
-    function createRSCValve(RSCCreateData memory _data) external returns(address) {
-
+    function createRSCValve(
+        RSCCreateData memory _data
+    ) external returns (address) {
         // check and register creationId
         bytes32 creationId = _data.creationId;
         address payable clone;
         if (creationId != bytes32(0)) {
             bytes32 salt = _getSalt(_data, msg.sender);
-            clone = payable(Clones.cloneDeterministic(contractImplementation, salt));
+            clone = payable(
+                Clones.cloneDeterministic(contractImplementation, salt)
+            );
         } else {
             clone = payable(Clones.clone(contractImplementation));
         }
@@ -142,7 +152,9 @@ contract XLARSCValveFactory is Ownable {
      * @dev Only Owner function for setting platform fee
      * @param _platformWallet New native currency wallet which will receive fee
      */
-    function setPlatformWallet(address payable _platformWallet) external onlyOwner {
+    function setPlatformWallet(
+        address payable _platformWallet
+    ) external onlyOwner {
         emit PlatformWalletChanged(platformWallet, _platformWallet);
         platformWallet = _platformWallet;
     }
