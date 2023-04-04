@@ -4,6 +4,7 @@
     "@openzeppelin/contracts": "^4.8.2",
     "@openzeppelin/contracts-upgradeable": "^4.8.2",
     "@openzeppelin/test-helpers": "^0.5.16",
-    "hardhat": "^2.13.0"
+    "hardhat": "^2.13.0",
+    "solhint": "^3.4.1"
   }
 }
