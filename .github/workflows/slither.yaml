@@ -1,12 +1,10 @@
 name: Static Analysis
 on:
   push:
-    branches: [main, ci]
     paths:
       - "contracts/**"
       - ".github/workflows/slither.yaml"
   pull_request:
-    branches: [main]
     paths:
       - "contracts/**"
 
@@ -20,6 +18,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
+
       - name: Use Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v1
         with:
