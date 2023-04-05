@@ -9,7 +9,7 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "./interfaces/IFeeFactory.sol";
 import "./interfaces/IRecursiveRSC.sol";
 
-contract XLARSCValve is OwnableUpgradeable {
+contract RSCValve is OwnableUpgradeable {
     using SafeERC20 for IERC20;
 
     mapping(address => bool) public distributors;
