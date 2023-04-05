@@ -361,7 +361,7 @@ contract RSCValve is OwnableUpgradeable {
     }
 
     /**
-     * @notice External function to set controller address, if set to address(0), unable to change it
+     * @notice External function to set controller address
      * @param _controller address of new controller
      */
     function setController(address _controller) external onlyOwner {
