@@ -6,6 +6,9 @@ import "@openzeppelin/contracts/proxy/Clones.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./RSCValve.sol";
 
+// Throw when Fee Percentage is more than 100%
+error InvalidFeePercentage();
+
 contract RSCValveFactory is Ownable {
     address payable public immutable contractImplementation;
     bytes32 public constant version = "1.0";
@@ -40,9 +43,6 @@ contract RSCValveFactory is Ownable {
         address payable oldPlatformWallet,
         address payable newPlatformWallet
     );
-
-    // Throw when Fee Percentage is more than 100%
-    error InvalidFeePercentage();
 
     constructor() {
         contractImplementation = payable(new RSCValve());

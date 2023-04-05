@@ -9,6 +9,39 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "./interfaces/IFeeFactory.sol";
 import "./interfaces/IRecursiveRSC.sol";
 
+// Throw when if sender is not distributor
+error OnlyDistributorError();
+
+// Throw when sender is not controller
+error OnlyControllerError();
+
+// Throw when transaction fails
+error TransferFailedError();
+
+// Throw when submitted recipient with address(0)
+error NullAddressRecipientError();
+
+// Throw if recipient is already in contract
+error RecipientAlreadyAddedError();
+
+// Throw when arrays are submit without same length
+error InconsistentDataLengthError();
+
+// Throw when sum of percentage is not 100%
+error InvalidPercentageError();
+
+// Throw when distributor address is same as submit one
+error DistributorAlreadyConfiguredError();
+
+// Throw when distributor address is same as submit one
+error ControllerAlreadyConfiguredError();
+
+// Throw when change is triggered for immutable recipients
+error ImmutableRecipientsError();
+
+// Throw when renounce ownership is called
+error RenounceOwnershipForbidden();
+
 contract RSCValve is OwnableUpgradeable {
     using SafeERC20 for IERC20;
 
@@ -33,39 +66,6 @@ contract RSCValve is OwnableUpgradeable {
     );
     event AutoNativeCurrencyDistributionChanged(bool oldValue, bool newValue);
     event ImmutableRecipients(bool isImmutableRecipients);
-
-    // Throw when if sender is not distributor
-    error OnlyDistributorError();
-
-    // Throw when sender is not controller
-    error OnlyControllerError();
-
-    // Throw when transaction fails
-    error TransferFailedError();
-
-    // Throw when submitted recipient with address(0)
-    error NullAddressRecipientError();
-
-    // Throw if recipient is already in contract
-    error RecipientAlreadyAddedError();
-
-    // Throw when arrays are submit without same length
-    error InconsistentDataLengthError();
-
-    // Throw when sum of percentage is not 100%
-    error InvalidPercentageError();
-
-    // Throw when distributor address is same as submit one
-    error DistributorAlreadyConfiguredError();
-
-    // Throw when distributor address is same as submit one
-    error ControllerAlreadyConfiguredError();
-
-    // Throw when change is triggered for immutable recipients
-    error ImmutableRecipientsError();
-
-    // Throw when renounce ownership is called
-    error RenounceOwnershipForbidden();
 
     /**
      * @dev Checks whether sender is distributor
