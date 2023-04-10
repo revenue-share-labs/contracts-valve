@@ -3,16 +3,19 @@
 pragma solidity ^0.8.19;
 
 import "@openzeppelin/contracts/proxy/Clones.sol";
-import "./RSCValve.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "./RSCValve.sol";
 
-contract XLARSCValveFactory is Ownable {
+// Throw when Fee Percentage is more than 100%
+error InvalidFeePercentage();
+
+contract RSCValveFactory is Ownable {
     address payable public immutable contractImplementation;
     bytes32 public constant version = "1.0";
     uint256 public platformFee;
     address payable public platformWallet;
 
-    struct RSCCreateData {
+    struct RSCValveCreateData {
         address controller;
         address[] distributors;
         bool isImmutableRecipients;
@@ -41,11 +44,8 @@ contract XLARSCValveFactory is Ownable {
         address payable newPlatformWallet
     );
 
-    // Throw when Fee Percentage is more than 100%
-    error InvalidFeePercentage();
-
     constructor() {
-        contractImplementation = payable(new XLARSCValve());
+        contractImplementation = payable(new RSCValve());
     }
 
     /**
@@ -54,7 +54,7 @@ contract XLARSCValveFactory is Ownable {
      * @param _deployer Wallet address that want to create new RSC contract
      */
     function _getSalt(
-        RSCCreateData memory _data,
+        RSCValveCreateData memory _data,
         address _deployer
     ) internal pure returns (bytes32) {
         bytes32 hash = keccak256(
@@ -79,7 +79,7 @@ contract XLARSCValveFactory is Ownable {
      * @param _deployer Wallet address that want to create new RSC contract
      */
     function predictDeterministicAddress(
-        RSCCreateData memory _data,
+        RSCValveCreateData memory _data,
         address _deployer
     ) external view returns (address) {
         bytes32 salt = _getSalt(_data, _deployer);
@@ -95,7 +95,7 @@ contract XLARSCValveFactory is Ownable {
      * @param _data Initial data for creating new RSC Valve contract
      */
     function createRSCValve(
-        RSCCreateData memory _data
+        RSCValveCreateData memory _data
     ) external returns (address) {
         // check and register creationId
         bytes32 creationId = _data.creationId;
@@ -109,7 +109,7 @@ contract XLARSCValveFactory is Ownable {
             clone = payable(Clones.clone(contractImplementation));
         }
 
-        XLARSCValve(clone).initialize(
+        RSCValve(clone).initialize(
             msg.sender,
             _data.controller,
             _data.distributors,

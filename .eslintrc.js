@@ -28,9 +28,7 @@ module.exports = {
       }
     ],
     "camelcase": "off",
-    "node/no-extraneous-import": ["error", {
-      "allowModules": ["chai"]
-    }]
+    "node/no-extraneous-import": ["warn"]
   },
   overrides: [
     {
