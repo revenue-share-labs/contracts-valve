@@ -1,4 +1,4 @@
-import { network } from "hardhat";
+import { ethers, network } from "hardhat";
 
 const snapshot = {
   take: async (): Promise<any> => {
@@ -15,4 +15,12 @@ const snapshot = {
   },
 };
 
-export { snapshot };
+const randomSigners = (amount: number) => {
+  const signers = [];
+  for (let i = 0; i < amount; i++) {
+    signers.push(ethers.Wallet.createRandom());
+  }
+  return signers;
+};
+
+export { snapshot, randomSigners };
