@@ -36,7 +36,6 @@ async function deployRSCValve(
 }
 
 describe("RSCValve", function () {
-  let RSCValveFactory: any;
   let RSCValve: any;
   let TestToken: any;
   let testToken: any;
@@ -184,6 +183,22 @@ describe("RSCValve", function () {
     ).to.be.revertedWithCustomError(RSCValve, "OnlyControllerError");
   });
 
+  it("InconsistentDataLengthError", async () => {
+    await expect(
+      RSCValve.setRecipients(
+        [addr1.address, addr3.address],
+        [2000000, 5000000, 3000000]
+      )
+    ).to.be.revertedWithCustomError(RSCValve, "InconsistentDataLengthError");
+
+    await expect(
+      RSCValve.setRecipients(
+        [addr1.address, addr3.address, addr4.address],
+        [2000000, 5000000]
+      )
+    ).to.be.revertedWithCustomError(RSCValve, "InconsistentDataLengthError");
+  });
+
   it("Should set recipients correctly and set immutable recipients", async () => {
     await expect(
       RSCValve.connect(addr3).setRecipientsExt(
@@ -256,7 +271,41 @@ describe("RSCValve", function () {
     ).to.be.revertedWithCustomError(RSCValve, "ImmutableRecipientsError");
   });
 
-  it("Should redistribute eth correctly", async () => {
+  it("Should redistribute ETH correctly via fallback", async () => {
+    await RSCValve.setRecipients(
+      [addr1.address, addr2.address],
+      [8000000, 2000000]
+    );
+
+    const addr1BalanceBefore = (
+      await ethers.provider.getBalance(addr1.address)
+    ).toBigInt();
+    const addr2BalanceBefore = (
+      await ethers.provider.getBalance(addr2.address)
+    ).toBigInt();
+
+    await owner.sendTransaction({
+      to: RSCValve.address,
+      data: "0x1234",
+      value: ethers.utils.parseEther("50"),
+    });
+
+    const addr1BalanceAfter = (
+      await ethers.provider.getBalance(addr1.address)
+    ).toBigInt();
+    const addr2BalanceAfter = (
+      await ethers.provider.getBalance(addr2.address)
+    ).toBigInt();
+
+    expect(addr1BalanceAfter).to.be.equal(
+      addr1BalanceBefore + ethers.utils.parseEther("40").toBigInt()
+    );
+    expect(addr2BalanceAfter).to.be.equal(
+      addr2BalanceBefore + ethers.utils.parseEther("10").toBigInt()
+    );
+  });
+
+  it("Should redistribute ETH correctly", async () => {
     await RSCValve.setRecipients(
       [addr1.address, addr2.address],
       [8000000, 2000000]
@@ -271,7 +320,7 @@ describe("RSCValve", function () {
       await ethers.provider.getBalance(addr2.address)
     ).toBigInt();
 
-    const transactionHash = await owner.sendTransaction({
+    await owner.sendTransaction({
       to: RSCValve.address,
       value: ethers.utils.parseEther("50"),
     });
@@ -290,7 +339,7 @@ describe("RSCValve", function () {
       addr2BalanceBefore + ethers.utils.parseEther("10").toBigInt()
     );
 
-    const transactionHash2 = await owner.sendTransaction({
+    await owner.sendTransaction({
       to: RSCValve.address,
       value: ethers.utils.parseEther("0.5"),
     });
@@ -402,7 +451,7 @@ describe("RSCValve", function () {
       await ethers.provider.getBalance(addr1.address)
     ).toBigInt();
 
-    const transactionHash = await owner.sendTransaction({
+    await owner.sendTransaction({
       to: RSCValveManualDistribution.address,
       value: ethers.utils.parseEther("50"),
     });
@@ -482,7 +531,7 @@ describe("RSCValve", function () {
       await ethers.provider.getBalance(addr1.address)
     ).toBigInt();
 
-    const transactionHash = await owner.sendTransaction({
+    await owner.sendTransaction({
       to: rscFeeValve.address,
       value: ethers.utils.parseEther("50"),
     });
@@ -566,7 +615,7 @@ describe("RSCValve", function () {
     });
   });
 
-  it("Should recursively erc20 split", async () => {
+  it("Should recursively split ERC20", async () => {
     const rscValveThird = await deployRSCValve(
       owner.address,
       [owner.address],
@@ -622,7 +671,7 @@ describe("RSCValve", function () {
     expect(await testToken.balanceOf(rscValveThird.address)).to.be.equal(0);
   });
 
-  it("Should recursively ETH split", async () => {
+  it("Should recursively split ETH", async () => {
     const rscValveThird = await deployRSCValve(
       owner.address,
       [owner.address],
@@ -638,7 +687,7 @@ describe("RSCValve", function () {
       owner.address,
       [owner.address],
       true,
-      false,
+      true,
       ethers.utils.parseEther("1"),
       [addr1.address, rscValveThird.address],
       [5000000, 5000000],
