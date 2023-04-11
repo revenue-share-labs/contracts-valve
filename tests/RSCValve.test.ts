@@ -1,55 +1,61 @@
 import { expect } from "chai";
 import { ethers } from "hardhat";
-export { deployRSCValve };
+import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 
-async function deployRSCValve(
-  controller: any,
-  distributors: any,
-  isImmutableRecipients: any,
-  isAutoNativeCurrencyDistribution: any,
-  minAutoDistributeAmount: any,
-  initialRecipients: any,
-  percentages: any,
-  creationId: any
-) {
-  const RSCValveFactory = await ethers.getContractFactory("RSCValveFactory");
-  const rscValveFactory = await RSCValveFactory.deploy();
-  await rscValveFactory.deployed();
-
-  const tx = await rscValveFactory.createRSCValve({
-    controller,
-    distributors,
-    isImmutableRecipients,
-    isAutoNativeCurrencyDistribution,
-    minAutoDistributeAmount,
-    initialRecipients,
-    percentages,
-    creationId,
-  });
-  const receipt = await tx.wait();
-  const revenueShareContractAddress = receipt.events?.[3].args?.[0];
-  const RevenueShareContract = await ethers.getContractFactory("RSCValve");
-  const RSCValve = await RevenueShareContract.attach(
-    revenueShareContractAddress
-  );
-  return RSCValve;
-}
+import {
+  RSCValve,
+  RSCValveFactory,
+  RSCValveFactory__factory,
+  TestToken,
+  TestToken__factory,
+} from "../typechain-types";
+import { snapshot } from "./utils";
 
 describe("RSCValve", function () {
-  let RSCValve: any;
-  let TestToken: any;
-  let testToken: any;
+  let rscValveFactory: RSCValveFactory,
+    rscValve: RSCValve,
+    snapId: string,
+    testToken: TestToken,
+    owner: SignerWithAddress,
+    addr1: SignerWithAddress,
+    addr2: SignerWithAddress,
+    addr3: SignerWithAddress,
+    addr4: SignerWithAddress,
+    addr5: SignerWithAddress;
 
-  let owner: any;
-  let addr1: any;
-  let addr2: any;
-  let addr3: any;
-  let addr4: any;
-  let addr5: any;
+  async function deployRSCValve(
+    controller: any,
+    distributors: any,
+    isImmutableRecipients: any,
+    isAutoNativeCurrencyDistribution: any,
+    minAutoDistributeAmount: any,
+    initialRecipients: any,
+    percentages: any,
+    creationId: any
+  ) {
+    const tx = await rscValveFactory.createRSCValve({
+      controller,
+      distributors,
+      isImmutableRecipients,
+      isAutoNativeCurrencyDistribution,
+      minAutoDistributeAmount,
+      initialRecipients,
+      percentages,
+      creationId,
+    });
+    const receipt = await tx.wait();
+    const revenueShareContractAddress = receipt.events?.[3].args?.[0];
+    const RevenueShareContract = await ethers.getContractFactory("RSCValve");
+    const RSCValve = await RevenueShareContract.attach(
+      revenueShareContractAddress
+    );
+    return RSCValve;
+  }
 
-  beforeEach(async () => {
+  before(async () => {
     [owner, addr1, addr2, addr3, addr4, addr5] = await ethers.getSigners();
-    RSCValve = await deployRSCValve(
+    rscValveFactory = await new RSCValveFactory__factory(owner).deploy();
+    rscValve = await deployRSCValve(
       owner.address,
       [owner.address],
       false,
@@ -59,220 +65,230 @@ describe("RSCValve", function () {
       [10000000],
       ethers.constants.HashZero
     );
-
-    TestToken = await ethers.getContractFactory("TestToken");
-    testToken = await TestToken.deploy();
+    testToken = await new TestToken__factory(owner).deploy();
     await testToken.deployed();
     await testToken.setMinter(owner.address);
   });
 
+  beforeEach(async () => {
+    snapId = await snapshot.take();
+  });
+
+  afterEach(async () => {
+    await snapshot.restore(snapId);
+  });
+
   it("Should set base attrs correctly", async () => {
-    expect(await RSCValve.owner()).to.be.equal(owner.address);
-    expect(await RSCValve.distributors(owner.address)).to.be.true;
+    expect(await rscValve.owner()).to.be.equal(owner.address);
+    expect(await rscValve.distributors(owner.address)).to.be.true;
 
-    expect(await RSCValve.isAutoNativeCurrencyDistribution()).to.be.true;
-    await RSCValve.setAutoNativeCurrencyDistribution(false);
-    expect(await RSCValve.isAutoNativeCurrencyDistribution()).to.be.false;
+    expect(await rscValve.isAutoNativeCurrencyDistribution()).to.be.true;
+    await rscValve.setAutoNativeCurrencyDistribution(false);
+    expect(await rscValve.isAutoNativeCurrencyDistribution()).to.be.false;
     await expect(
-      RSCValve.connect(addr1).setAutoNativeCurrencyDistribution(false)
+      rscValve.connect(addr1).setAutoNativeCurrencyDistribution(false)
     ).to.be.revertedWith("Ownable: caller is not the owner");
 
-    expect(await RSCValve.isImmutableRecipients()).to.be.false;
+    expect(await rscValve.isImmutableRecipients()).to.be.false;
     await expect(
-      RSCValve.connect(addr1).setImmutableRecipients()
+      rscValve.connect(addr1).setImmutableRecipients()
     ).to.be.revertedWith("Ownable: caller is not the owner");
-    await RSCValve.setImmutableRecipients();
-    expect(await RSCValve.isImmutableRecipients()).to.be.true;
+    await rscValve.setImmutableRecipients();
+    expect(await rscValve.isImmutableRecipients()).to.be.true;
     await expect(
-      RSCValve.setImmutableRecipients()
-    ).to.be.revertedWithCustomError(RSCValve, "ImmutableRecipientsError");
+      rscValve.setImmutableRecipients()
+    ).to.be.revertedWithCustomError(rscValve, "ImmutableRecipientsError");
 
-    expect(await RSCValve.minAutoDistributionAmount()).to.be.equal(
+    expect(await rscValve.minAutoDistributionAmount()).to.be.equal(
       ethers.utils.parseEther("1")
     );
-    await RSCValve.setMinAutoDistributionAmount(ethers.utils.parseEther("2"));
-    expect(await RSCValve.minAutoDistributionAmount()).to.be.equal(
+    await rscValve.setMinAutoDistributionAmount(ethers.utils.parseEther("2"));
+    expect(await rscValve.minAutoDistributionAmount()).to.be.equal(
       ethers.utils.parseEther("2")
     );
 
     await expect(
-      RSCValve.connect(addr1).setMinAutoDistributionAmount(
-        ethers.utils.parseEther("2")
-      )
+      rscValve
+        .connect(addr1)
+        .setMinAutoDistributionAmount(ethers.utils.parseEther("2"))
     ).to.be.revertedWith("Ownable: caller is not the owner");
   });
 
   it("Should set recipients correctly", async () => {
     await expect(
-      RSCValve.connect(addr3).setRecipients(
-        [addr1.address, addr3.address, addr4.address],
-        [2000000, 5000000, 3000000]
-      )
-    ).to.be.revertedWithCustomError(RSCValve, "OnlyControllerError");
+      rscValve
+        .connect(addr3)
+        .setRecipients(
+          [addr1.address, addr3.address, addr4.address],
+          [2000000, 5000000, 3000000]
+        )
+    ).to.be.revertedWithCustomError(rscValve, "OnlyControllerError");
 
-    await RSCValve.setRecipients(
+    await rscValve.setRecipients(
       [addr1.address, addr3.address, addr4.address],
       [2000000, 5000000, 3000000]
     );
 
-    expect(await RSCValve.recipients(0)).to.be.equal(addr1.address);
-    expect(await RSCValve.recipients(1)).to.be.equal(addr3.address);
-    expect(await RSCValve.recipients(2)).to.be.equal(addr4.address);
-    expect(await RSCValve.recipientsPercentage(addr1.address)).to.be.equal(
+    expect(await rscValve.recipients(0)).to.be.equal(addr1.address);
+    expect(await rscValve.recipients(1)).to.be.equal(addr3.address);
+    expect(await rscValve.recipients(2)).to.be.equal(addr4.address);
+    expect(await rscValve.recipientsPercentage(addr1.address)).to.be.equal(
       2000000
     );
-    expect(await RSCValve.recipientsPercentage(addr3.address)).to.be.equal(
+    expect(await rscValve.recipientsPercentage(addr3.address)).to.be.equal(
       5000000
     );
-    expect(await RSCValve.recipientsPercentage(addr4.address)).to.be.equal(
+    expect(await rscValve.recipientsPercentage(addr4.address)).to.be.equal(
       3000000
     );
-    expect(await RSCValve.numberOfRecipients()).to.be.equal(3);
+    expect(await rscValve.numberOfRecipients()).to.be.equal(3);
 
     await expect(
-      RSCValve.setRecipients(
+      rscValve.setRecipients(
         [addr1.address, addr3.address, addr4.address],
         [2000000, 5000000, 2000000]
       )
-    ).to.be.revertedWithCustomError(RSCValve, "InvalidPercentageError");
+    ).to.be.revertedWithCustomError(rscValve, "InvalidPercentageError");
 
-    expect(await RSCValve.recipients(0)).to.be.equal(addr1.address);
-    expect(await RSCValve.recipients(1)).to.be.equal(addr3.address);
-    expect(await RSCValve.recipients(2)).to.be.equal(addr4.address);
-    expect(await RSCValve.recipientsPercentage(addr1.address)).to.be.equal(
+    expect(await rscValve.recipients(0)).to.be.equal(addr1.address);
+    expect(await rscValve.recipients(1)).to.be.equal(addr3.address);
+    expect(await rscValve.recipients(2)).to.be.equal(addr4.address);
+    expect(await rscValve.recipientsPercentage(addr1.address)).to.be.equal(
       2000000
     );
-    expect(await RSCValve.recipientsPercentage(addr3.address)).to.be.equal(
+    expect(await rscValve.recipientsPercentage(addr3.address)).to.be.equal(
       5000000
     );
-    expect(await RSCValve.recipientsPercentage(addr4.address)).to.be.equal(
+    expect(await rscValve.recipientsPercentage(addr4.address)).to.be.equal(
       3000000
     );
-    expect(await RSCValve.numberOfRecipients()).to.be.equal(3);
+    expect(await rscValve.numberOfRecipients()).to.be.equal(3);
 
-    await RSCValve.setRecipients(
+    await rscValve.setRecipients(
       [addr5.address, addr4.address, addr3.address, addr1.address],
       [2000000, 2000000, 3000000, 3000000]
     );
 
-    expect(await RSCValve.recipients(0)).to.be.equal(addr5.address);
-    expect(await RSCValve.recipients(1)).to.be.equal(addr4.address);
-    expect(await RSCValve.recipients(2)).to.be.equal(addr3.address);
-    expect(await RSCValve.recipients(3)).to.be.equal(addr1.address);
-    expect(await RSCValve.recipientsPercentage(addr5.address)).to.be.equal(
+    expect(await rscValve.recipients(0)).to.be.equal(addr5.address);
+    expect(await rscValve.recipients(1)).to.be.equal(addr4.address);
+    expect(await rscValve.recipients(2)).to.be.equal(addr3.address);
+    expect(await rscValve.recipients(3)).to.be.equal(addr1.address);
+    expect(await rscValve.recipientsPercentage(addr5.address)).to.be.equal(
       2000000
     );
-    expect(await RSCValve.recipientsPercentage(addr4.address)).to.be.equal(
+    expect(await rscValve.recipientsPercentage(addr4.address)).to.be.equal(
       2000000
     );
-    expect(await RSCValve.recipientsPercentage(addr3.address)).to.be.equal(
+    expect(await rscValve.recipientsPercentage(addr3.address)).to.be.equal(
       3000000
     );
-    expect(await RSCValve.recipientsPercentage(addr1.address)).to.be.equal(
+    expect(await rscValve.recipientsPercentage(addr1.address)).to.be.equal(
       3000000
     );
-    expect(await RSCValve.numberOfRecipients()).to.be.equal(4);
+    expect(await rscValve.numberOfRecipients()).to.be.equal(4);
 
-    await RSCValve.setController(ethers.constants.AddressZero);
+    await rscValve.setController(ethers.constants.AddressZero);
 
     await expect(
-      RSCValve.setRecipients(
+      rscValve.setRecipients(
         [addr1.address, addr3.address, addr4.address],
         [2000000, 5000000, 3000000]
       )
-    ).to.be.revertedWithCustomError(RSCValve, "OnlyControllerError");
+    ).to.be.revertedWithCustomError(rscValve, "OnlyControllerError");
   });
 
   it("InconsistentDataLengthError", async () => {
     await expect(
-      RSCValve.setRecipients(
+      rscValve.setRecipients(
         [addr1.address, addr3.address],
         [2000000, 5000000, 3000000]
       )
-    ).to.be.revertedWithCustomError(RSCValve, "InconsistentDataLengthError");
+    ).to.be.revertedWithCustomError(rscValve, "InconsistentDataLengthError");
 
     await expect(
-      RSCValve.setRecipients(
+      rscValve.setRecipients(
         [addr1.address, addr3.address, addr4.address],
         [2000000, 5000000]
       )
-    ).to.be.revertedWithCustomError(RSCValve, "InconsistentDataLengthError");
+    ).to.be.revertedWithCustomError(rscValve, "InconsistentDataLengthError");
   });
 
   it("Should set recipients correctly and set immutable recipients", async () => {
     await expect(
-      RSCValve.connect(addr3).setRecipientsExt(
-        [addr1.address, addr3.address, addr4.address],
-        [2000000, 5000000, 3000000]
-      )
-    ).to.be.revertedWithCustomError(RSCValve, "OnlyControllerError");
+      rscValve
+        .connect(addr3)
+        .setRecipientsExt(
+          [addr1.address, addr3.address, addr4.address],
+          [2000000, 5000000, 3000000]
+        )
+    ).to.be.revertedWithCustomError(rscValve, "OnlyControllerError");
 
-    await RSCValve.setRecipients(
+    await rscValve.setRecipients(
       [addr1.address, addr3.address, addr4.address],
       [2000000, 5000000, 3000000]
     );
 
     await expect(
-      RSCValve.setRecipientsExt(
+      rscValve.setRecipientsExt(
         [addr1.address, addr3.address, addr4.address],
         [2000000, 5000000, 2000000]
       )
-    ).to.be.revertedWithCustomError(RSCValve, "InvalidPercentageError");
+    ).to.be.revertedWithCustomError(rscValve, "InvalidPercentageError");
 
-    expect(await RSCValve.recipients(0)).to.be.equal(addr1.address);
-    expect(await RSCValve.recipients(1)).to.be.equal(addr3.address);
-    expect(await RSCValve.recipients(2)).to.be.equal(addr4.address);
-    expect(await RSCValve.recipientsPercentage(addr1.address)).to.be.equal(
+    expect(await rscValve.recipients(0)).to.be.equal(addr1.address);
+    expect(await rscValve.recipients(1)).to.be.equal(addr3.address);
+    expect(await rscValve.recipients(2)).to.be.equal(addr4.address);
+    expect(await rscValve.recipientsPercentage(addr1.address)).to.be.equal(
       2000000
     );
-    expect(await RSCValve.recipientsPercentage(addr3.address)).to.be.equal(
+    expect(await rscValve.recipientsPercentage(addr3.address)).to.be.equal(
       5000000
     );
-    expect(await RSCValve.recipientsPercentage(addr4.address)).to.be.equal(
+    expect(await rscValve.recipientsPercentage(addr4.address)).to.be.equal(
       3000000
     );
-    expect(await RSCValve.numberOfRecipients()).to.be.equal(3);
+    expect(await rscValve.numberOfRecipients()).to.be.equal(3);
 
-    await RSCValve.setRecipientsExt(
+    await rscValve.setRecipientsExt(
       [addr5.address, addr4.address, addr3.address, addr1.address],
       [2000000, 2000000, 3000000, 3000000]
     );
 
-    expect(await RSCValve.recipients(0)).to.be.equal(addr5.address);
-    expect(await RSCValve.recipients(1)).to.be.equal(addr4.address);
-    expect(await RSCValve.recipients(2)).to.be.equal(addr3.address);
-    expect(await RSCValve.recipients(3)).to.be.equal(addr1.address);
-    expect(await RSCValve.recipientsPercentage(addr5.address)).to.be.equal(
+    expect(await rscValve.recipients(0)).to.be.equal(addr5.address);
+    expect(await rscValve.recipients(1)).to.be.equal(addr4.address);
+    expect(await rscValve.recipients(2)).to.be.equal(addr3.address);
+    expect(await rscValve.recipients(3)).to.be.equal(addr1.address);
+    expect(await rscValve.recipientsPercentage(addr5.address)).to.be.equal(
       2000000
     );
-    expect(await RSCValve.recipientsPercentage(addr4.address)).to.be.equal(
+    expect(await rscValve.recipientsPercentage(addr4.address)).to.be.equal(
       2000000
     );
-    expect(await RSCValve.recipientsPercentage(addr3.address)).to.be.equal(
+    expect(await rscValve.recipientsPercentage(addr3.address)).to.be.equal(
       3000000
     );
-    expect(await RSCValve.recipientsPercentage(addr1.address)).to.be.equal(
+    expect(await rscValve.recipientsPercentage(addr1.address)).to.be.equal(
       3000000
     );
-    expect(await RSCValve.numberOfRecipients()).to.be.equal(4);
+    expect(await rscValve.numberOfRecipients()).to.be.equal(4);
 
     await expect(
-      RSCValve.setRecipientsExt(
+      rscValve.setRecipientsExt(
         [addr1.address, addr3.address, addr4.address],
         [2000000, 5000000, 3000000]
       )
-    ).to.be.revertedWithCustomError(RSCValve, "ImmutableRecipientsError");
+    ).to.be.revertedWithCustomError(rscValve, "ImmutableRecipientsError");
 
     await expect(
-      RSCValve.setRecipients(
+      rscValve.setRecipients(
         [addr1.address, addr3.address, addr4.address],
         [2000000, 5000000, 3000000]
       )
-    ).to.be.revertedWithCustomError(RSCValve, "ImmutableRecipientsError");
+    ).to.be.revertedWithCustomError(rscValve, "ImmutableRecipientsError");
   });
 
   it("Should redistribute ETH correctly via fallback", async () => {
-    await RSCValve.setRecipients(
+    await rscValve.setRecipients(
       [addr1.address, addr2.address],
       [8000000, 2000000]
     );
@@ -285,7 +301,7 @@ describe("RSCValve", function () {
     ).toBigInt();
 
     await owner.sendTransaction({
-      to: RSCValve.address,
+      to: rscValve.address,
       data: "0x1234",
       value: ethers.utils.parseEther("50"),
     });
@@ -306,12 +322,12 @@ describe("RSCValve", function () {
   });
 
   it("Should redistribute ETH correctly", async () => {
-    await RSCValve.setRecipients(
+    await rscValve.setRecipients(
       [addr1.address, addr2.address],
       [8000000, 2000000]
     );
 
-    expect(await RSCValve.numberOfRecipients()).to.be.equal(2);
+    expect(await rscValve.numberOfRecipients()).to.be.equal(2);
 
     const addr1BalanceBefore = (
       await ethers.provider.getBalance(addr1.address)
@@ -321,7 +337,7 @@ describe("RSCValve", function () {
     ).toBigInt();
 
     await owner.sendTransaction({
-      to: RSCValve.address,
+      to: rscValve.address,
       value: ethers.utils.parseEther("50"),
     });
 
@@ -340,18 +356,18 @@ describe("RSCValve", function () {
     );
 
     await owner.sendTransaction({
-      to: RSCValve.address,
+      to: rscValve.address,
       value: ethers.utils.parseEther("0.5"),
     });
 
     expect(
-      (await ethers.provider.getBalance(RSCValve.address)).toBigInt()
+      (await ethers.provider.getBalance(rscValve.address)).toBigInt()
     ).to.be.equal(ethers.utils.parseEther("0.5"));
 
-    await RSCValve.redistributeNativeCurrency();
+    await rscValve.redistributeNativeCurrency();
 
     expect(
-      (await ethers.provider.getBalance(RSCValve.address)).toBigInt()
+      (await ethers.provider.getBalance(rscValve.address)).toBigInt()
     ).to.be.equal(ethers.utils.parseEther("0"));
 
     expect(
@@ -367,15 +383,15 @@ describe("RSCValve", function () {
   });
 
   it("Should redistribute ERC20 token", async () => {
-    await testToken.mint(RSCValve.address, ethers.utils.parseEther("100"));
+    await testToken.mint(rscValve.address, ethers.utils.parseEther("100"));
 
-    await RSCValve.setRecipients(
+    await rscValve.setRecipients(
       [addr1.address, addr2.address],
       [2000000, 8000000]
     );
 
-    await RSCValve.redistributeToken(testToken.address);
-    expect(await testToken.balanceOf(RSCValve.address)).to.be.equal(0);
+    await rscValve.redistributeToken(testToken.address);
+    expect(await testToken.balanceOf(rscValve.address)).to.be.equal(0);
     expect(await testToken.balanceOf(addr1.address)).to.be.equal(
       ethers.utils.parseEther("20")
     );
@@ -383,20 +399,20 @@ describe("RSCValve", function () {
       ethers.utils.parseEther("80")
     );
 
-    await testToken.mint(RSCValve.address, ethers.utils.parseEther("100"));
+    await testToken.mint(rscValve.address, ethers.utils.parseEther("100"));
 
     await expect(
-      RSCValve.connect(addr3).redistributeToken(testToken.address)
-    ).to.be.revertedWithCustomError(RSCValve, "OnlyDistributorError");
+      rscValve.connect(addr3).redistributeToken(testToken.address)
+    ).to.be.revertedWithCustomError(rscValve, "OnlyDistributorError");
 
     await expect(
-      RSCValve.connect(addr3).setDistributor(addr3.address, true)
+      rscValve.connect(addr3).setDistributor(addr3.address, true)
     ).to.be.revertedWith("Ownable: caller is not the owner");
 
-    await RSCValve.setDistributor(addr3.address, true);
-    await RSCValve.connect(addr3).redistributeToken(testToken.address);
+    await rscValve.setDistributor(addr3.address, true);
+    await rscValve.connect(addr3).redistributeToken(testToken.address);
 
-    expect(await testToken.balanceOf(RSCValve.address)).to.be.equal(0);
+    expect(await testToken.balanceOf(rscValve.address)).to.be.equal(0);
     expect(await testToken.balanceOf(addr1.address)).to.be.equal(
       ethers.utils.parseEther("40")
     );
@@ -404,15 +420,15 @@ describe("RSCValve", function () {
       ethers.utils.parseEther("160")
     );
 
-    await expect(RSCValve.renounceOwnership()).to.be.revertedWithCustomError(
-      RSCValve,
+    await expect(rscValve.renounceOwnership()).to.be.revertedWithCustomError(
+      rscValve,
       "RenounceOwnershipForbidden"
     );
   });
 
   it("Should initialize only once", async () => {
     await expect(
-      RSCValve.initialize(
+      rscValve.initialize(
         addr2.address,
         ethers.constants.AddressZero,
         [owner.address],
@@ -428,10 +444,10 @@ describe("RSCValve", function () {
   });
 
   it("Should transfer ownership correctly", async () => {
-    await RSCValve.transferOwnership(addr1.address);
-    expect(await RSCValve.owner()).to.be.equal(addr1.address);
+    await rscValve.transferOwnership(addr1.address);
+    expect(await rscValve.owner()).to.be.equal(addr1.address);
     await expect(
-      RSCValve.connect(addr2).transferOwnership(addr2.address)
+      rscValve.connect(addr2).transferOwnership(addr2.address)
     ).to.be.revertedWith("Ownable: caller is not the owner");
   });
 
@@ -463,7 +479,7 @@ describe("RSCValve", function () {
 
     await expect(
       RSCValveManualDistribution.connect(addr3).redistributeNativeCurrency()
-    ).to.be.revertedWithCustomError(RSCValve, "OnlyDistributorError");
+    ).to.be.revertedWithCustomError(rscValve, "OnlyDistributorError");
 
     await RSCValveManualDistribution.redistributeNativeCurrency();
 
@@ -736,32 +752,32 @@ describe("RSCValve", function () {
   });
 
   it("Should distribute small amounts correctly", async () => {
-    await RSCValve.setRecipients(
+    await rscValve.setRecipients(
       [addr1.address, addr2.address],
       [2000000, 8000000]
     );
 
-    await testToken.mint(RSCValve.address, BigInt(15000000));
+    await testToken.mint(rscValve.address, BigInt(15000000));
 
-    await RSCValve.redistributeToken(testToken.address);
+    await rscValve.redistributeToken(testToken.address);
     expect(await testToken.balanceOf(addr1.address)).to.be.equal(
       BigInt(3000000)
     );
     expect(await testToken.balanceOf(addr2.address)).to.be.equal(
       BigInt(12000000)
     );
-    expect(await testToken.balanceOf(RSCValve.address)).to.be.equal(BigInt(0));
+    expect(await testToken.balanceOf(rscValve.address)).to.be.equal(BigInt(0));
 
-    await testToken.mint(RSCValve.address, BigInt(15000000));
+    await testToken.mint(rscValve.address, BigInt(15000000));
 
-    await RSCValve.redistributeToken(testToken.address);
+    await rscValve.redistributeToken(testToken.address);
     expect(await testToken.balanceOf(addr1.address)).to.be.equal(
       BigInt(6000000)
     );
     expect(await testToken.balanceOf(addr2.address)).to.be.equal(
       BigInt(24000000)
     );
-    expect(await testToken.balanceOf(RSCValve.address)).to.be.equal(BigInt(0));
+    expect(await testToken.balanceOf(rscValve.address)).to.be.equal(BigInt(0));
   });
 
   it("Should distribute small ether amounts correctly", async () => {
