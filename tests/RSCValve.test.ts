@@ -67,7 +67,6 @@ describe("RSCValve", function () {
     );
     testToken = await new TestToken__factory(owner).deploy();
     await testToken.deployed();
-    await testToken.setMinter(owner.address);
   });
 
   beforeEach(async () => {
@@ -197,7 +196,7 @@ describe("RSCValve", function () {
     ).to.be.revertedWithCustomError(rscValve, "OnlyControllerError");
   });
 
-  it("InconsistentDataLengthError", async () => {
+  it("InconsistentDataLengthError()", async () => {
     await expect(
       rscValve.setRecipients(
         [addr1.address, addr3.address],
@@ -211,6 +210,13 @@ describe("RSCValve", function () {
         [2000000, 5000000]
       )
     ).to.be.revertedWithCustomError(rscValve, "InconsistentDataLengthError");
+  });
+
+  it("RenounceOwnershipForbidden()", async () => {
+    await expect(rscValve.renounceOwnership()).to.be.revertedWithCustomError(
+      rscValve,
+      "RenounceOwnershipForbidden"
+    );
   });
 
   it("Should set recipients correctly and set immutable recipients", async () => {

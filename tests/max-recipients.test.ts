@@ -17,11 +17,10 @@ describe("RSCValve Max recipients test", () => {
     rscValve: RSCValve,
     testToken: TestToken,
     owner: SignerWithAddress,
-    addrs: SignerWithAddress[],
     snapId: string;
 
   before(async () => {
-    [owner, ...addrs] = await ethers.getSigners();
+    [owner] = await ethers.getSigners();
     rscValveFactory = await new RSCValveFactory__factory(owner).deploy();
     const tx = await rscValveFactory.createRSCValve({
       controller: owner.address,
@@ -40,7 +39,7 @@ describe("RSCValve Max recipients test", () => {
       owner
     );
     testToken = await new TestToken__factory(owner).deploy();
-    await testToken.setMinter(owner.address);
+    await testToken.deployed();
   });
 
   beforeEach(async () => {
