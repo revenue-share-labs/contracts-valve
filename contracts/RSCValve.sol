@@ -60,10 +60,7 @@ contract RSCValve is OwnableUpgradeable {
     event DistributeToken(address token, uint256 amount);
     event DistributorChanged(address distributor, bool isDistributor);
     event ControllerChanged(address oldController, address newController);
-    event MinAutoDistributionAmountChanged(
-        uint256 oldAmount,
-        uint256 newAmount
-    );
+    event MinAutoDistributionAmountChanged(uint256 oldAmount, uint256 newAmount);
     event AutoNativeCurrencyDistributionChanged(bool oldValue, bool newValue);
     event ImmutableRecipients(bool isImmutableRecipients);
 
@@ -186,11 +183,8 @@ contract RSCValve is OwnableUpgradeable {
         for (uint256 i = 0; i < recipientsLength; ) {
             address payable recipient = recipients[i];
             uint256 percentage = recipientsPercentage[recipient];
-            uint256 amountToReceive = ((_valueToDistribute * percentage) /
-                10000000);
-            (bool success, ) = payable(recipient).call{
-                value: amountToReceive
-            }("");
+            uint256 amountToReceive = ((_valueToDistribute * percentage) / 10000000);
+            (bool success, ) = payable(recipient).call{ value: amountToReceive }("");
             if (success == false) {
                 revert TransferFailedError();
             }
@@ -213,10 +207,7 @@ contract RSCValve is OwnableUpgradeable {
      * @param _recipient Fixed amount of token user want to buy
      * @param _percentage code of the affiliation partner
      */
-    function _addRecipient(
-        address payable _recipient,
-        uint256 _percentage
-    ) internal {
+    function _addRecipient(address payable _recipient, uint256 _percentage) internal {
         if (_recipient == address(0)) {
             revert NullAddressRecipientError();
         }
@@ -336,8 +327,7 @@ contract RSCValve is OwnableUpgradeable {
         for (uint256 i = 0; i < recipientsLength; ) {
             address payable recipient = recipients[i];
             uint256 percentage = recipientsPercentage[recipient];
-            uint256 amountToReceive = ((contractBalance * percentage) /
-                10000000);
+            uint256 amountToReceive = ((contractBalance * percentage) / 10000000);
             erc20Token.safeTransfer(recipient, amountToReceive);
             _recursiveERC20Distribution(recipient, _token);
             unchecked {
@@ -374,10 +364,7 @@ contract RSCValve is OwnableUpgradeable {
      * @param _recipient Address of recipient to recursively distribute
      * @param _token token to be distributed
      */
-    function _recursiveERC20Distribution(
-        address _recipient,
-        address _token
-    ) internal {
+    function _recursiveERC20Distribution(address _recipient, address _token) internal {
         // Handle Recursive token distribution
         IRecursiveRSC recursiveRecipient = IRecursiveRSC(_recipient);
 
