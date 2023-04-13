@@ -67,7 +67,6 @@ describe("RSCValve", function () {
     );
     testToken = await new TestToken__factory(owner).deploy();
     await testToken.deployed();
-    await testToken.setMinter(owner.address);
   });
 
   beforeEach(async () => {
@@ -383,7 +382,7 @@ describe("RSCValve", function () {
   });
 
   it("Should redistribute ERC20 token", async () => {
-    await testToken.mint(rscValve.address, ethers.utils.parseEther("100"));
+    await testToken.mint(rscValve.address, ethers.utils.parseEther("1"));
 
     await rscValve.setRecipients(
       [addr1.address, addr2.address],
@@ -393,10 +392,10 @@ describe("RSCValve", function () {
     await rscValve.redistributeToken(testToken.address);
     expect(await testToken.balanceOf(rscValve.address)).to.be.equal(0);
     expect(await testToken.balanceOf(addr1.address)).to.be.equal(
-      ethers.utils.parseEther("20")
+      ethers.utils.parseEther("0.2")
     );
     expect(await testToken.balanceOf(addr2.address)).to.be.equal(
-      ethers.utils.parseEther("80")
+      ethers.utils.parseEther("0.8")
     );
 
     await testToken.mint(rscValve.address, ethers.utils.parseEther("100"));
