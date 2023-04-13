@@ -196,7 +196,7 @@ describe("RSCValve", function () {
     ).to.be.revertedWithCustomError(rscValve, "OnlyControllerError");
   });
 
-  it("InconsistentDataLengthError", async () => {
+  it("InconsistentDataLengthError()", async () => {
     await expect(
       rscValve.setRecipients(
         [addr1.address, addr3.address],
@@ -210,6 +210,13 @@ describe("RSCValve", function () {
         [2000000, 5000000]
       )
     ).to.be.revertedWithCustomError(rscValve, "InconsistentDataLengthError");
+  });
+
+  it("RenounceOwnershipForbidden()", async () => {
+    await expect(rscValve.renounceOwnership()).to.be.revertedWithCustomError(
+      rscValve,
+      "RenounceOwnershipForbidden"
+    );
   });
 
   it("Should set recipients correctly and set immutable recipients", async () => {
@@ -382,7 +389,7 @@ describe("RSCValve", function () {
   });
 
   it("Should redistribute ERC20 token", async () => {
-    await testToken.mint(rscValve.address, ethers.utils.parseEther("1"));
+    await testToken.mint(rscValve.address, ethers.utils.parseEther("100"));
 
     await rscValve.setRecipients(
       [addr1.address, addr2.address],
@@ -392,10 +399,10 @@ describe("RSCValve", function () {
     await rscValve.redistributeToken(testToken.address);
     expect(await testToken.balanceOf(rscValve.address)).to.be.equal(0);
     expect(await testToken.balanceOf(addr1.address)).to.be.equal(
-      ethers.utils.parseEther("0.2")
+      ethers.utils.parseEther("20")
     );
     expect(await testToken.balanceOf(addr2.address)).to.be.equal(
-      ethers.utils.parseEther("0.8")
+      ethers.utils.parseEther("80")
     );
 
     await testToken.mint(rscValve.address, ethers.utils.parseEther("100"));
