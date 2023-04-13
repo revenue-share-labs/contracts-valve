@@ -49,7 +49,7 @@ contract RSCValveFactory is Ownable {
     }
 
     /**
-     * @dev internal function for getting semi-random salt for deterministicClone creation
+     * @dev Internal function for getting semi-random salt for deterministicClone creation
      * @param _data RSC Create data used for hashing and getting random salt
      * @param _deployer Wallet address that want to create new RSC contract
      */
@@ -74,7 +74,7 @@ contract RSCValveFactory is Ownable {
     }
 
     /**
-     * @dev external function for creating clone proxy pointing to RSC Percentage
+     * @dev External function for creating clone proxy pointing to RSC Percentage
      * @param _data RSC Create data used for hashing and getting random salt
      * @param _deployer Wallet address that want to create new RSC contract
      */
@@ -145,7 +145,7 @@ contract RSCValveFactory is Ownable {
     }
 
     /**
-     * @dev Only Owner function for setting platform fee
+     * @dev Owner function for setting platform fee
      * @param _platformWallet New native currency wallet which will receive fee
      */
     function setPlatformWallet(address payable _platformWallet) external onlyOwner {
