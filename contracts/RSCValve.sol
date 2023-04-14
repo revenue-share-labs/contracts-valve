@@ -30,12 +30,6 @@ error InconsistentDataLengthError();
 // Throw when sum of percentage is not 100%
 error InvalidPercentageError();
 
-// Throw when distributor address is same as submit one
-error DistributorAlreadyConfiguredError();
-
-// Throw when distributor address is same as submit one
-error ControllerAlreadyConfiguredError();
-
 // Throw when change is triggered for immutable recipients
 error ImmutableRecipientsError();
 
