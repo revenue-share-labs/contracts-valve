@@ -8,20 +8,23 @@ import {
   RSCValveFactory__factory,
   TestToken,
   TestToken__factory,
+  MockReceiver,
+  MockReceiver__factory,
 } from "../typechain-types";
 import { snapshot } from "./utils";
 
 describe("RSCValve", function () {
   let rscValveFactory: RSCValveFactory,
     rscValve: RSCValve,
-    snapId: string,
     testToken: TestToken,
+    mockReceiver: MockReceiver,
     owner: SignerWithAddress,
     alice: SignerWithAddress,
     bob: SignerWithAddress,
     addr3: SignerWithAddress,
     addr4: SignerWithAddress,
-    addr5: SignerWithAddress;
+    addr5: SignerWithAddress,
+    snapId: string;
 
   async function deployRSCValve(
     controller: any,
@@ -66,7 +69,9 @@ describe("RSCValve", function () {
       ethers.constants.HashZero
     );
     testToken = await new TestToken__factory(owner).deploy();
-    await testToken.deployed();
+    mockReceiver = await new MockReceiver__factory(owner).deploy(
+      rscValve.address
+    );
   });
 
   beforeEach(async () => {
@@ -232,6 +237,53 @@ describe("RSCValve", function () {
       rscValve,
       "RenounceOwnershipForbidden"
     );
+  });
+
+  it("TransferFailedError()", async () => {
+    // With mock contract as recipient
+    await rscValve.setAutoNativeCurrencyDistribution(false);
+    await rscValve.setRecipients(
+      [alice.address, mockReceiver.address],
+      [5000000, 5000000]
+    );
+    await owner.sendTransaction({
+      to: rscValve.address,
+      value: ethers.utils.parseEther("50"),
+    });
+    await expect(
+      rscValve.redistributeNativeCurrency()
+    ).to.be.revertedWithCustomError(rscValve, "TransferFailedError");
+
+    // With mock contract as platform wallet
+    await rscValveFactory.setPlatformFee(2000000);
+    await rscValveFactory.setPlatformWallet(mockReceiver.address);
+    expect(await rscValveFactory.platformWallet()).to.be.equal(
+      mockReceiver.address
+    );
+    const tx = await rscValveFactory.createRSCValve({
+      controller: owner.address,
+      distributors: [owner.address],
+      isImmutableRecipients: true,
+      isAutoNativeCurrencyDistribution: false,
+      minAutoDistributeAmount: ethers.utils.parseEther("1"),
+      initialRecipients: [alice.address, bob.address],
+      percentages: [5000000, 5000000],
+      creationId: ethers.constants.HashZero,
+    });
+    const receipt = await tx.wait();
+    const revenueShareContractAddress = receipt.events?.[3].args?.[0];
+    const RevenueShareContract = await ethers.getContractFactory("RSCValve");
+    const rscValveFee = await RevenueShareContract.attach(
+      revenueShareContractAddress
+    );
+    expect(await rscValveFee.platformFee()).to.be.equal(2000000);
+    await owner.sendTransaction({
+      to: rscValveFee.address,
+      value: ethers.utils.parseEther("50"),
+    });
+    await expect(
+      rscValveFee.redistributeNativeCurrency()
+    ).to.be.revertedWithCustomError(rscValveFee, "TransferFailedError");
   });
 
   it("TooLowBalanceToRedistribute()", async () => {
@@ -561,33 +613,25 @@ describe("RSCValve", function () {
   });
 
   it("Should work with fees Correctly", async () => {
-    const RSCValveFeeFactory = await ethers.getContractFactory(
-      "RSCValveFactory"
-    );
-    const rscValveFeeFactory = await RSCValveFeeFactory.deploy();
-    await rscValveFeeFactory.deployed();
-
     await expect(
-      rscValveFeeFactory.connect(alice).setPlatformFee(BigInt(1))
+      rscValveFactory.connect(alice).setPlatformFee(BigInt(1))
     ).to.be.revertedWith("Ownable: caller is not the owner");
 
     await expect(
-      rscValveFeeFactory.setPlatformFee(BigInt(10000001))
-    ).to.be.revertedWithCustomError(rscValveFeeFactory, "InvalidFeePercentage");
+      rscValveFactory.setPlatformFee(BigInt(10000001))
+    ).to.be.revertedWithCustomError(rscValveFactory, "InvalidFeePercentage");
 
     await expect(
-      rscValveFeeFactory.connect(alice).setPlatformWallet(addr4.address)
+      rscValveFactory.connect(alice).setPlatformWallet(addr4.address)
     ).to.be.revertedWith("Ownable: caller is not the owner");
 
-    await rscValveFeeFactory.setPlatformWallet(addr5.address);
-    await rscValveFeeFactory.setPlatformFee(BigInt(5000000));
+    await rscValveFactory.setPlatformWallet(addr5.address);
+    await rscValveFactory.setPlatformFee(BigInt(5000000));
 
-    expect(await rscValveFeeFactory.platformWallet()).to.be.equal(
-      addr5.address
-    );
-    expect(await rscValveFeeFactory.platformFee()).to.be.equal(BigInt(5000000));
+    expect(await rscValveFactory.platformWallet()).to.be.equal(addr5.address);
+    expect(await rscValveFactory.platformFee()).to.be.equal(BigInt(5000000));
 
-    const txFee = await rscValveFeeFactory.createRSCValve({
+    const txFee = await rscValveFactory.createRSCValve({
       controller: owner.address,
       distributors: [owner.address],
       isImmutableRecipients: true,
@@ -845,15 +889,10 @@ describe("RSCValve", function () {
   });
 
   it("Should distribute small ether amounts correctly", async () => {
-    const rscValveXYZ = await deployRSCValve(
-      owner.address,
-      [owner.address],
-      true,
-      true,
-      BigInt(10000000),
+    await rscValve.setMinAutoDistributionAmount(BigInt(10000000));
+    await rscValve.setRecipients(
       [alice.address, bob.address],
-      [5000000, 5000000],
-      ethers.constants.HashZero
+      [5000000, 5000000]
     );
 
     const aliceBalanceBefore1 = (
@@ -864,7 +903,7 @@ describe("RSCValve", function () {
     ).toBigInt();
 
     await owner.sendTransaction({
-      to: rscValveXYZ.address,
+      to: rscValve.address,
       value: ethers.utils.parseEther("0.000000000015"),
     });
 
@@ -880,7 +919,7 @@ describe("RSCValve", function () {
       bobBalanceBefore1 + ethers.utils.parseEther("0.0000000000075").toBigInt()
     );
     expect(
-      (await ethers.provider.getBalance(rscValveXYZ.address)).toBigInt()
+      (await ethers.provider.getBalance(rscValve.address)).toBigInt()
     ).to.be.equal(BigInt(0));
 
     const aliceBalanceBefore2 = (
@@ -891,12 +930,12 @@ describe("RSCValve", function () {
     ).toBigInt();
 
     await owner.sendTransaction({
-      to: rscValveXYZ.address,
+      to: rscValve.address,
       value: ethers.utils.parseEther("0.000000000015"),
     });
 
     expect(
-      (await ethers.provider.getBalance(rscValveXYZ.address)).toBigInt()
+      (await ethers.provider.getBalance(rscValve.address)).toBigInt()
     ).to.be.equal(BigInt(0));
     expect(
       (await ethers.provider.getBalance(alice.address)).toBigInt()

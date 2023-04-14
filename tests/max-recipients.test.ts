@@ -39,7 +39,6 @@ describe("RSCValve Max recipients test", () => {
       owner
     );
     testToken = await new TestToken__factory(owner).deploy();
-    await testToken.deployed();
   });
 
   beforeEach(async () => {
