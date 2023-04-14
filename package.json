@@ -3,6 +3,7 @@
     "node": ">=18.12.1"
   },
   "devDependencies": {
+    "@dlsl/hardhat-markup": "^1.0.0-rc.7",
     "@nomicfoundation/hardhat-toolbox": "^2.0.2",
     "@openzeppelin/contracts": "^4.8.2",
     "@openzeppelin/contracts-upgradeable": "^4.8.2",

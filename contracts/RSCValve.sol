@@ -30,17 +30,14 @@ error InconsistentDataLengthError();
 // Throw when sum of percentage is not 100%
 error InvalidPercentageError();
 
-// Throw when distributor address is same as submit one
-error DistributorAlreadyConfiguredError();
-
-// Throw when distributor address is same as submit one
-error ControllerAlreadyConfiguredError();
-
 // Throw when change is triggered for immutable recipients
 error ImmutableRecipientsError();
 
 // Throw when renounce ownership is called
 error RenounceOwnershipForbidden();
+
+// Throw when amount to distribute is less than 10000000
+error TooLowBalanceToRedistribute();
 
 contract RSCValve is OwnableUpgradeable {
     using SafeERC20 for IERC20;
@@ -170,7 +167,7 @@ contract RSCValve is OwnableUpgradeable {
         _valueToDistribute -= fee;
 
         if (_valueToDistribute < 10000000) {
-            return;
+            revert TooLowBalanceToRedistribute();
         }
 
         address payable platformWallet = factory.platformWallet();
@@ -315,8 +312,7 @@ contract RSCValve is OwnableUpgradeable {
         contractBalance -= fee;
 
         if (contractBalance < 10000000) {
-            // because of percentage
-            return;
+            revert TooLowBalanceToRedistribute();
         }
 
         uint256 recipientsLength = recipients.length;
