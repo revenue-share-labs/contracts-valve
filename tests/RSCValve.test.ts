@@ -212,6 +212,21 @@ describe("RSCValve", function () {
     ).to.be.revertedWithCustomError(rscValve, "InconsistentDataLengthError");
   });
 
+  it("NullAddressRecipientError()", async () => {
+    await expect(
+      rscValve.setRecipients(
+        [addr1.address, ethers.constants.AddressZero],
+        [5000000, 5000000]
+      )
+    ).to.be.revertedWithCustomError(rscValve, "NullAddressRecipientError");
+  });
+
+  it("RecipientAlreadyAddedError()", async () => {
+    await expect(
+      rscValve.setRecipients([addr1.address, addr1.address], [5000000, 5000000])
+    ).to.be.revertedWithCustomError(rscValve, "RecipientAlreadyAddedError");
+  });
+
   it("RenounceOwnershipForbidden()", async () => {
     await expect(rscValve.renounceOwnership()).to.be.revertedWithCustomError(
       rscValve,
