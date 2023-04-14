@@ -443,9 +443,7 @@ describe("RSCValve", function () {
     );
     expect(
       (await ethers.provider.getBalance(bob.address)).toBigInt()
-    ).to.be.equal(
-      bobBalanceAfter + ethers.utils.parseEther("0.1").toBigInt()
-    );
+    ).to.be.equal(bobBalanceAfter + ethers.utils.parseEther("0.1").toBigInt());
   });
 
   it("Should redistribute ERC20 token", async () => {
@@ -879,8 +877,7 @@ describe("RSCValve", function () {
     expect(
       (await ethers.provider.getBalance(bob.address)).toBigInt()
     ).to.be.equal(
-      bobBalanceBefore1 +
-        ethers.utils.parseEther("0.0000000000075").toBigInt()
+      bobBalanceBefore1 + ethers.utils.parseEther("0.0000000000075").toBigInt()
     );
     expect(
       (await ethers.provider.getBalance(rscValveXYZ.address)).toBigInt()
@@ -911,8 +908,7 @@ describe("RSCValve", function () {
     expect(
       (await ethers.provider.getBalance(bob.address)).toBigInt()
     ).to.be.equal(
-      bobBalanceBefore2 +
-        ethers.utils.parseEther("0.0000000000075").toBigInt()
+      bobBalanceBefore2 + ethers.utils.parseEther("0.0000000000075").toBigInt()
     );
   });
 });
