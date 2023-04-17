@@ -114,6 +114,12 @@ error RecipientAlreadyAddedError();
 error RenounceOwnershipForbidden();
 ```
 
+### TooLowBalanceToRedistribute error
+
+```solidity
+error TooLowBalanceToRedistribute();
+```
+
 ### TransferFailedError error
 
 ```solidity
