@@ -69,9 +69,7 @@ describe("RSCValve", function () {
       ethers.constants.HashZero
     );
     testToken = await new TestToken__factory(owner).deploy();
-    mockReceiver = await new MockReceiver__factory(owner).deploy(
-      rscValve.address
-    );
+    mockReceiver = await new MockReceiver__factory(owner).deploy();
   });
 
   beforeEach(async () => {
@@ -757,7 +755,7 @@ describe("RSCValve", function () {
       true,
       false,
       ethers.utils.parseEther("1"),
-      [alice.address, rscValveThird.address],
+      [mockReceiver.address, rscValveThird.address],
       [5000000, 5000000],
       ethers.constants.HashZero
     );

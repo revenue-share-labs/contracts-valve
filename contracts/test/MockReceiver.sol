@@ -13,11 +13,5 @@ contract MockReceiver {
         revert CantAcceptEtherDirectly();
     }
 
-    constructor(address payable _valve) {
-        valve = RSCValve(_valve);
-    }
-
-    function testRedistributeNativeCurrency() external {
-        valve.redistributeNativeCurrency();
-    }
+    constructor() {}
 }
