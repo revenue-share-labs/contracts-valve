@@ -1,7 +1,9 @@
+import "dotenv/config";
 import { HardhatUserConfig } from "hardhat/config";
 import "@nomicfoundation/hardhat-toolbox";
 import "hardhat-gas-reporter";
 import "solidity-coverage";
+import "@dlsl/hardhat-markup";
 
 const config: HardhatUserConfig = {
   solidity: {
@@ -24,8 +26,19 @@ const config: HardhatUserConfig = {
     tests: "./tests",
   },
   gasReporter: {
-    enabled: process.env.REPORT_GAS !== undefined,
+    // Enabled by default
+    // enabled: process.env.REPORT_GAS !== undefined,
+    token: "ETH",
+    gasPriceApi:
+      "https://api.etherscan.io/api?module=proxy&action=eth_gasPrice",
     currency: "USD",
+  },
+  markup: {
+    outdir: "./docs",
+    onlyFiles: ["./contracts"],
+    skipFiles: [],
+    noCompile: false,
+    verbose: false,
   },
 };
 
