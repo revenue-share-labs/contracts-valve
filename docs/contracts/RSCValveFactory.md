@@ -3,7 +3,7 @@
 ## Contract Description
 
 
-License: MIT
+License: BSL 1.1
 
 
 Used to deploy RSCValve contracts.

@@ -3,7 +3,7 @@
 ## Contract Description
 
 
-License: MIT
+License: BSL 1.1
 
 
 The main function of RSCValve is to redistribute tokens (whether they are ERC-20 or native cryptocurrency), to the participants based on the percentages assigned to them.

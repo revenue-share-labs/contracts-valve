@@ -1,3 +1,9 @@
+# RSC Valve contracts repository
+
+Detailed documentation for each contract can be found [here](https://github.com/xla-rsc/contracts-valve/tree/main/docs/contracts).
+
+Deployment instructions described in [Deployment.md](scripts/Deployment.md)
+
 ## Summary
 
 1. The main ideas of RSC Valve SC is to redistribute tokens (whether they are ERC-20 or native cryptocurrency), to the participants based on the percentages assigned to them.
