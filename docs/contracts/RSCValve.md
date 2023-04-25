@@ -7,17 +7,23 @@ License: MIT
 
 ## Events info
 
-### AutoNativeCurrencyDistributionChanged event
+### AutoNativeCurrencyDistribution event
 
 ```solidity
-event AutoNativeCurrencyDistributionChanged(bool oldValue, bool newValue);
+event AutoNativeCurrencyDistribution(bool newValue);
 ```
 
-### ControllerChanged event
+
+Emitted when `isAutoNativeCurrencyDistribution` is set.
+
+### Controller event
 
 ```solidity
-event ControllerChanged(address oldController, address newController);
+event Controller(address newController);
 ```
+
+
+Emitted when new controller address is set.
 
 ### DistributeToken event
 
@@ -25,17 +31,26 @@ event ControllerChanged(address oldController, address newController);
 event DistributeToken(address token, uint256 amount);
 ```
 
-### DistributorChanged event
+
+Emitted when token distribution is triggered.
+
+### Distributor event
 
 ```solidity
-event DistributorChanged(address distributor, bool isDistributor);
+event Distributor(address distributor, bool isDistributor);
 ```
+
+
+Emitted when distributor status is set.
 
 ### ImmutableRecipients event
 
 ```solidity
 event ImmutableRecipients(bool isImmutableRecipients);
 ```
+
+
+Emitted when recipients set immutable.
 
 ### Initialized event
 
@@ -46,11 +61,14 @@ event Initialized(uint8 version);
 
 Triggered when the contract has been initialized or reinitialized.
 
-### MinAutoDistributionAmountChanged event
+### MinAutoDistributionAmount event
 
 ```solidity
-event MinAutoDistributionAmountChanged(uint256 oldAmount, uint256 newAmount);
+event MinAutoDistributionAmount(uint256 newAmount);
 ```
+
+
+Emitted when new `minAutoDistributionAmount` is set.
 
 ### OwnershipTransferred event
 
@@ -64,6 +82,9 @@ event OwnershipTransferred(address indexed previousOwner, address indexed newOwn
 event SetRecipients(address[] recipients, uint256[] percentages);
 ```
 
+
+Emitted when recipients and their percentages are set.
+
 ## Errors info
 
 ### ImmutableRecipientsError error
@@ -72,11 +93,17 @@ event SetRecipients(address[] recipients, uint256[] percentages);
 error ImmutableRecipientsError();
 ```
 
+
+Throw when change is triggered for immutable recipients
+
 ### InconsistentDataLengthError error
 
 ```solidity
 error InconsistentDataLengthError();
 ```
+
+
+Throw when arrays are submit without same length
 
 ### InvalidPercentageError error
 
@@ -84,11 +111,17 @@ error InconsistentDataLengthError();
 error InvalidPercentageError();
 ```
 
+
+Throw when sum of percentage is not 100%
+
 ### NullAddressRecipientError error
 
 ```solidity
 error NullAddressRecipientError();
 ```
+
+
+Throw when submitted recipient with address(0)
 
 ### OnlyControllerError error
 
@@ -96,11 +129,17 @@ error NullAddressRecipientError();
 error OnlyControllerError();
 ```
 
+
+Throw when sender is not controller
+
 ### OnlyDistributorError error
 
 ```solidity
 error OnlyDistributorError();
 ```
+
+
+Throw when if sender is not distributor
 
 ### RecipientAlreadyAddedError error
 
@@ -108,11 +147,17 @@ error OnlyDistributorError();
 error RecipientAlreadyAddedError();
 ```
 
+
+Throw if recipient is already in contract
+
 ### RenounceOwnershipForbidden error
 
 ```solidity
 error RenounceOwnershipForbidden();
 ```
+
+
+Throw when renounce ownership is called
 
 ### TooLowBalanceToRedistribute error
 
@@ -120,13 +165,28 @@ error RenounceOwnershipForbidden();
 error TooLowBalanceToRedistribute();
 ```
 
+
+Throw when amount to distribute is less than BASIS_POINT
+
 ### TransferFailedError error
 
 ```solidity
 error TransferFailedError();
 ```
 
+
+Throw when transaction fails
+
 ## Functions info
+
+### BASIS_POINT (0xada5f642)
+
+```solidity
+function BASIS_POINT() external view returns (uint256);
+```
+
+
+Measurement unit 10000000 = 100%.
 
 ### controller (0xf77c4791)
 
@@ -134,11 +194,17 @@ error TransferFailedError();
 function controller() external view returns (address);
 ```
 
+
+Controller address
+
 ### distributors (0xcc642784)
 
 ```solidity
 function distributors(address) external view returns (bool);
 ```
+
+
+distributorAddress => isDistributor
 
 ### factory (0xc45a0155)
 
@@ -146,7 +212,10 @@ function distributors(address) external view returns (bool);
 function factory() external view returns (address);
 ```
 
-### initialize (0xe6bfdc0b)
+
+Factory address.
+
+### initialize (0x4edf8a4f)
 
 ```solidity
 function initialize(
@@ -157,30 +226,28 @@ function initialize(
 	bool _isAutoNativeCurrencyDistribution,
 	uint256 _minAutoDistributionAmount,
 	uint256 _platformFee,
-	address _factoryAddress,
 	address[] _initialRecipients,
 	uint256[] _percentages
 ) external;
 ```
 
 
-Constructor function, can be called only once
+Constructor function, can be called only once.
 
 
 Parameters:
 
-| Name                              | Type      | Description                                                                           |
-| :-------------------------------- | :-------- | :------------------------------------------------------------------------------------ |
-| _owner                            | address   | Owner of the contract                                                                 |
-| _controller                       | address   | Address which control setting / removing recipients                                   |
-| _distributors                     | address[] | List of addresses which can distribute ERC20 tokens or native currency                |
-| _isImmutableRecipients            | bool      | Flag indicating whether recipients could be changed                                   |
-| _isAutoNativeCurrencyDistribution | bool      | Flag indicating whether native currency will be automatically distributed or manually |
-| _minAutoDistributionAmount        | uint256   | Minimum native currency amount to trigger auto native currency distribution           |
-| _platformFee                      | uint256   | Percentage defining fee for distribution services                                     |
-| _factoryAddress                   | address   | Address of the factory used for creating this RSC                                     |
-| _initialRecipients                | address[] | Initial recipient addresses                                                           |
-| _percentages                      | uint256[] | Initial percentages for recipients                                                    |
+| Name                              | Type      | Description                                                                            |
+| :-------------------------------- | :-------- | :------------------------------------------------------------------------------------- |
+| _owner                            | address   | Owner of the contract.                                                                 |
+| _controller                       | address   | Address which control setting / removing recipients.                                   |
+| _distributors                     | address[] | List of addresses which can distribute ERC20 tokens or native currency.                |
+| _isImmutableRecipients            | bool      | Flag indicating whether recipients could be changed.                                   |
+| _isAutoNativeCurrencyDistribution | bool      | Flag indicating whether native currency will be automatically distributed or manually. |
+| _minAutoDistributionAmount        | uint256   | Minimum native currency amount to trigger auto native currency distribution.           |
+| _platformFee                      | uint256   | Percentage defining fee for distribution services.                                     |
+| _initialRecipients                | address[] | Initial recipient addresses.                                                           |
+| _percentages                      | uint256[] | Initial percentages for recipients.                                                    |
 
 ### isAutoNativeCurrencyDistribution (0x0808e1c6)
 
@@ -188,17 +255,26 @@ Parameters:
 function isAutoNativeCurrencyDistribution() external view returns (bool);
 ```
 
+
+If true, received native currency will be auto distributed.
+
 ### isImmutableRecipients (0xeaf4598a)
 
 ```solidity
 function isImmutableRecipients() external view returns (bool);
 ```
 
+
+If true, `recipients` array cant be updated.
+
 ### minAutoDistributionAmount (0x478f425a)
 
 ```solidity
 function minAutoDistributionAmount() external view returns (uint256);
 ```
+
+
+Minimum amount of native currency to trigger auto distribution.
 
 ### numberOfRecipients (0xee0e01c7)
 
@@ -224,17 +300,26 @@ Returns the address of the current owner.
 function platformFee() external view returns (uint256);
 ```
 
+
+Platform fee percentage.
+
 ### recipients (0xd1bc76a1)
 
 ```solidity
 function recipients(uint256) external view returns (address);
 ```
 
+
+Array of the recipients.
+
 ### recipientsPercentage (0x1558ab2f)
 
 ```solidity
 function recipientsPercentage(address) external view returns (uint256);
 ```
+
+
+recipientAddress => recipientPercentage
 
 ### redistributeNativeCurrency (0x3d12394a)
 

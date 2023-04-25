@@ -138,7 +138,6 @@ contract RSCValveFactory is Ownable {
             _data.isAutoNativeCurrencyDistribution,
             _data.minAutoDistributeAmount,
             platformFee,
-            address(this),
             _data.initialRecipients,
             _data.percentages
         );

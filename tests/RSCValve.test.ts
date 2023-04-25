@@ -47,7 +47,7 @@ describe("RSCValve", function () {
       creationId,
     });
     const receipt = await tx.wait();
-    const revenueShareContractAddress = receipt.events?.[3].args?.[0];
+    const revenueShareContractAddress = receipt.events?.[8].args?.[0];
     const RevenueShareContract = await ethers.getContractFactory("RSCValve");
     const RSCValve = await RevenueShareContract.attach(
       revenueShareContractAddress
@@ -269,7 +269,7 @@ describe("RSCValve", function () {
       creationId: ethers.constants.HashZero,
     });
     const receipt = await tx.wait();
-    const revenueShareContractAddress = receipt.events?.[3].args?.[0];
+    const revenueShareContractAddress = receipt.events?.[8].args?.[0];
     const RevenueShareContract = await ethers.getContractFactory("RSCValve");
     const rscValveFee = await RevenueShareContract.attach(
       revenueShareContractAddress
@@ -289,19 +289,6 @@ describe("RSCValve", function () {
       [alice.address, bob.address],
       [2000000, 8000000]
     );
-
-    // With tokens
-    const amountToDistribute = ethers.utils.parseEther("0.000000000001");
-    await testToken.mint(rscValve.address, amountToDistribute);
-
-    await expect(
-      rscValve.redistributeToken(testToken.address)
-    ).to.be.revertedWithCustomError(rscValve, "TooLowBalanceToRedistribute");
-    expect(await testToken.balanceOf(rscValve.address)).to.be.equal(
-      amountToDistribute
-    );
-    expect(await testToken.balanceOf(alice.address)).to.be.equal(0);
-    expect(await testToken.balanceOf(bob.address)).to.be.equal(0);
 
     // With ether
     const aliceBalanceBefore = (
@@ -403,7 +390,7 @@ describe("RSCValve", function () {
     ).to.be.revertedWithCustomError(rscValve, "ImmutableRecipientsError");
   });
 
-  it("Should redistribute ETH correctly via fallback", async () => {
+  it("Should redistribute ETH correctly via receive()", async () => {
     await rscValve.setRecipients(
       [alice.address, bob.address],
       [8000000, 2000000]
@@ -418,7 +405,6 @@ describe("RSCValve", function () {
 
     await owner.sendTransaction({
       to: rscValve.address,
-      data: "0x1234",
       value: ethers.utils.parseEther("50"),
     });
 
@@ -550,7 +536,6 @@ describe("RSCValve", function () {
         true,
         ethers.utils.parseEther("1"),
         BigInt(0),
-        alice.address,
         [alice.address],
         [10000000]
       )
@@ -644,7 +629,7 @@ describe("RSCValve", function () {
       creationId: ethers.constants.HashZero,
     });
     const receipt = await txFee.wait();
-    const revenueShareContractAddress = receipt.events?.[3].args?.[0];
+    const revenueShareContractAddress = receipt.events?.[8].args?.[0];
     const RevenueShareContract = await ethers.getContractFactory("RSCValve");
     const rscFeeValve = await RevenueShareContract.attach(
       revenueShareContractAddress

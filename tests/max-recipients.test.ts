@@ -33,7 +33,7 @@ describe("RSCValve Max recipients test", () => {
       creationId: ethers.constants.HashZero,
     });
     const receipt = await tx.wait();
-    const revenueShareContractAddress = receipt.events?.[3].args?.[0];
+    const revenueShareContractAddress = receipt.events?.[8].args?.[0];
     rscValve = await RSCValve__factory.connect(
       revenueShareContractAddress,
       owner
