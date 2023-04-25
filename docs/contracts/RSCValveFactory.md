@@ -92,7 +92,7 @@ function contractImplementation() external view returns (address);
 
 RSCValve implementation address.
 
-### createRSCValve (0x02afbfe1)
+### createRSCValve (0x46c4d7ff)
 
 ```solidity
 function createRSCValve(tuple _data) external returns (address);
@@ -135,7 +135,7 @@ function platformWallet() external view returns (address);
 
 Fee receiver address.
 
-### predictDeterministicAddress (0xa0c7b014)
+### predictDeterministicAddress (0xd78a6213)
 
 ```solidity
 function predictDeterministicAddress(

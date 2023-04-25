@@ -24,11 +24,8 @@ error NullAddressRecipientError();
 /// Throw if recipient is already in contract
 error RecipientAlreadyAddedError();
 
-/// Throw when arrays are submit without same length
-error InconsistentDataLengthError();
-
 /// Throw when sum of percentage is not 100%
-error InvalidPercentageError();
+error InvalidPercentageError(uint256);
 
 /// Throw when change is triggered for immutable recipients
 error ImmutableRecipientsError();
@@ -72,8 +69,14 @@ contract RSCValve is OwnableUpgradeable {
     /// recipientAddress => recipientPercentage
     mapping(address => uint256) public recipientsPercentage;
 
+    /// Contains recipient address and their percentage in rev share.
+    struct RecipientData {
+        address payable addrs;
+        uint256 percentage;
+    }
+
     /// Emitted when recipients and their percentages are set.
-    event SetRecipients(address payable[] recipients, uint256[] percentages);
+    event SetRecipients(RecipientData[] recipients);
 
     /// Emitted when token distribution is triggered.
     event DistributeToken(IERC20 token, uint256 amount);
@@ -122,8 +125,7 @@ contract RSCValve is OwnableUpgradeable {
      * @param _isAutoNativeCurrencyDistribution Flag indicating whether native currency will be automatically distributed or manually.
      * @param _minAutoDistributionAmount Minimum native currency amount to trigger auto native currency distribution.
      * @param _platformFee Percentage defining fee for distribution services.
-     * @param _initialRecipients Initial recipient addresses.
-     * @param _percentages Initial percentages for recipients.
+     * @param _recipients Array of `RecipientData` structs with recipient address and percentage.
      */
     function initialize(
         address _owner,
@@ -133,8 +135,7 @@ contract RSCValve is OwnableUpgradeable {
         bool _isAutoNativeCurrencyDistribution,
         uint256 _minAutoDistributionAmount,
         uint256 _platformFee,
-        address payable[] memory _initialRecipients,
-        uint256[] memory _percentages
+        RecipientData[] calldata _recipients
     ) public initializer {
         uint256 distributorsLength = _distributors.length;
         for (uint256 i = 0; i < distributorsLength; ) {
@@ -157,7 +158,7 @@ contract RSCValve is OwnableUpgradeable {
         factory = IFeeFactory(msg.sender);
         platformFee = _platformFee;
 
-        _setRecipients(_initialRecipients, _percentages);
+        _setRecipients(_recipients);
         emit ImmutableRecipients(_isImmutableRecipients);
         isImmutableRecipients = _isImmutableRecipients;
 
@@ -177,15 +178,15 @@ contract RSCValve is OwnableUpgradeable {
     }
 
     /**
-     * @notice External function to return number of recipients
+     * @notice External function to return number of recipients.
      */
     function numberOfRecipients() external view returns (uint256) {
         return recipients.length;
     }
 
     /**
-     * @notice Internal function to redistribute native currency
-     * @param _valueToDistribute Native currency amount to be distributed
+     * @notice Internal function to redistribute native currency.
+     * @param _valueToDistribute Native currency amount to be distributed.
      */
     function _redistributeNativeCurrency(uint256 _valueToDistribute) internal {
         uint256 fee = (_valueToDistribute * platformFee) / BASIS_POINT;
@@ -222,16 +223,16 @@ contract RSCValve is OwnableUpgradeable {
     }
 
     /**
-     * @notice External function to redistribute native currency
+     * @notice External function to redistribute native currency.
      */
     function redistributeNativeCurrency() external onlyDistributor {
         _redistributeNativeCurrency(address(this).balance);
     }
 
     /**
-     * @notice Internal function for adding recipient to revenue share
-     * @param _recipient Recipient address
-     * @param _percentage Recipient percentage
+     * @notice Internal function for adding recipient to revenue share.
+     * @param _recipient Recipient address.
+     * @param _percentage Recipient percentage.
      */
     function _addRecipient(address payable _recipient, uint256 _percentage) internal {
         if (_recipient == address(0)) {
@@ -245,7 +246,7 @@ contract RSCValve is OwnableUpgradeable {
     }
 
     /**
-     * @notice Internal function for removing all recipients
+     * @notice Internal function for removing all recipients.
      */
     function _removeAll() internal {
         uint256 recipientsLength = recipients.length;
@@ -265,30 +266,23 @@ contract RSCValve is OwnableUpgradeable {
     }
 
     /**
-     * @notice Internal function for setting recipients
-     * @param _newRecipients Addresses to be added
-     * @param _percentages New percentages for recipients
+     * @notice Internal function for setting recipients.
+     * @param _recipients Array of `RecipientData` structs with recipient address and percentage.
      */
     function _setRecipients(
-        address payable[] memory _newRecipients,
-        uint256[] memory _percentages
+        RecipientData[] calldata _recipients
     ) internal {
         if (isImmutableRecipients) {
             revert ImmutableRecipientsError();
         }
 
-        uint256 newRecipientsLength = _newRecipients.length;
-
-        if (newRecipientsLength != _percentages.length) {
-            revert InconsistentDataLengthError();
-        }
-
         _removeAll();
 
         uint256 percentageSum;
+        uint256 newRecipientsLength = _recipients.length;
         for (uint256 i = 0; i < newRecipientsLength; ) {
-            uint256 percentage = _percentages[i];
-            _addRecipient(_newRecipients[i], percentage);
+            uint256 percentage = _recipients[i].percentage;
+            _addRecipient(_recipients[i].addrs, percentage);
             percentageSum += percentage;
             unchecked {
                 i++;
@@ -296,40 +290,36 @@ contract RSCValve is OwnableUpgradeable {
         }
 
         if (percentageSum != BASIS_POINT) {
-            revert InvalidPercentageError();
+            revert InvalidPercentageError(percentageSum);
         }
 
-        emit SetRecipients(_newRecipients, _percentages);
+        emit SetRecipients(_recipients);
     }
 
     /**
-     * @notice External function for setting recipients
-     * @param _newRecipients Addresses to be added
-     * @param _percentages New percentages for recipients
+     * @notice External function for setting recipients.
+     * @param _recipients Array of `RecipientData` structs with recipient address and percentage.
      */
     function setRecipients(
-        address payable[] memory _newRecipients,
-        uint256[] memory _percentages
+        RecipientData[] calldata _recipients
     ) public onlyController {
-        _setRecipients(_newRecipients, _percentages);
+        _setRecipients(_recipients);
     }
 
     /**
-     * @notice External function for setting immutable recipients
-     * @param _newRecipients Addresses to be added
-     * @param _percentages New percentages for recipients
+     * @notice External function for setting immutable recipients.
+     * @param _recipients Array of `RecipientData` structs with recipient address and percentage.
      */
     function setRecipientsExt(
-        address payable[] memory _newRecipients,
-        uint256[] memory _percentages
+        RecipientData[] calldata _recipients
     ) public onlyController {
-        _setRecipients(_newRecipients, _percentages);
+        _setRecipients(_recipients);
         _setImmutableRecipients();
     }
 
     /**
-     * @notice External function to redistribute ERC20 token based on percentages assign to the recipients
-     * @param _token Address of the ERC20 token to be distribute
+     * @notice External function to redistribute ERC20 token based on percentages assign to the recipients.
+     * @param _token Address of the ERC20 token to be distribute.
      */
     function redistributeToken(IERC20 _token) external onlyDistributor {
         uint256 contractBalance = _token.balanceOf(address(this));
@@ -358,9 +348,9 @@ contract RSCValve is OwnableUpgradeable {
     }
 
     /**
-     * @notice External function to set distributor address
-     * @param _distributor Address of new distributor
-     * @param _isDistributor Bool indicating whether address is / isn't distributor
+     * @notice External function to set distributor address.
+     * @param _distributor Address of new distributor.
+     * @param _isDistributor Bool indicating whether address is / isn't distributor.
      */
     function setDistributor(
         address _distributor,
@@ -371,8 +361,8 @@ contract RSCValve is OwnableUpgradeable {
     }
 
     /**
-     * @notice External function to set controller address
-     * @param _controller Address of new controller
+     * @notice External function to set controller address.
+     * @param _controller Address of new controller.
      */
     function setController(address _controller) external onlyOwner {
         emit Controller(_controller);
@@ -380,9 +370,9 @@ contract RSCValve is OwnableUpgradeable {
     }
 
     /**
-     * @notice Internal function to check whether recipient should be recursively distributed
-     * @param _recipient Address of recipient to recursively distribute
-     * @param _token Token to be distributed
+     * @notice Internal function to check whether recipient should be recursively distributed.
+     * @param _recipient Address of recipient to recursively distribute.
+     * @param _token Token to be distributed.
      */
     function _recursiveERC20Distribution(address _recipient, IERC20 _token) internal {
         // Handle Recursive token distribution
@@ -408,8 +398,8 @@ contract RSCValve is OwnableUpgradeable {
     }
 
     /**
-     * @notice Internal function to check whether recipient should be recursively distributed
-     * @param _recipient Address of recipient to recursively distribute
+     * @notice Internal function to check whether recipient should be recursively distributed.
+     * @param _recipient Address of recipient to recursively distribute.
      */
     function _recursiveNativeCurrencyDistribution(address _recipient) internal {
         // Handle Recursive token distribution
@@ -447,7 +437,7 @@ contract RSCValve is OwnableUpgradeable {
     }
 
     /**
-     * @notice Internal function for setting immutable recipients to true
+     * @notice Internal function for setting immutable recipients to true.
      */
     function _setImmutableRecipients() internal {
         emit ImmutableRecipients(true);
@@ -455,7 +445,7 @@ contract RSCValve is OwnableUpgradeable {
     }
 
     /**
-     * @notice External function for setting immutable recipients to true
+     * @notice External function for setting immutable recipients to true.
      */
     function setImmutableRecipients() external onlyOwner {
         if (isImmutableRecipients) {
@@ -466,8 +456,8 @@ contract RSCValve is OwnableUpgradeable {
     }
 
     /**
-     * @notice External function for setting auto native currency distribution
-     * @param _isAutoNativeCurrencyDistribution Bool switching whether auto native currency distribution is enabled
+     * @notice External function for setting auto native currency distribution.
+     * @param _isAutoNativeCurrencyDistribution Bool switching whether auto native currency distribution is enabled.
      */
     function setAutoNativeCurrencyDistribution(
         bool _isAutoNativeCurrencyDistribution
@@ -477,8 +467,8 @@ contract RSCValve is OwnableUpgradeable {
     }
 
     /**
-     * @notice External function for setting minimun auto distribution amount
-     * @param _minAutoDistributionAmount New minimum distribution amount
+     * @notice External function for setting minimun auto distribution amount.
+     * @param _minAutoDistributionAmount New minimum distribution amount.
      */
     function setMinAutoDistributionAmount(
         uint256 _minAutoDistributionAmount

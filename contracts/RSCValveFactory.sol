@@ -16,7 +16,7 @@ contract RSCValveFactory is Ownable {
     uint256 public constant BASIS_POINT = 10000000;
 
     /// RSCValve implementation address.
-    address payable public immutable contractImplementation;
+    RSCValve public immutable contractImplementation;
 
     /// RSCValveFactory contract version.
     bytes32 public constant VERSION = "1.0";
@@ -40,9 +40,7 @@ contract RSCValveFactory is Ownable {
         /// Minimal amount to trigger auto distribution.
         uint256 minAutoDistributeAmount;
         /// Initial array of recipients addresses.
-        address payable[] initialRecipients;
-        /// Initial recipients percentages.
-        uint256[] percentages;
+        RSCValve.RecipientData[] recipients;
         /// Creation id.
         bytes32 creationId;
     }
@@ -70,7 +68,7 @@ contract RSCValveFactory is Ownable {
      * and sets its address to `contractImplementation`.
      */
     constructor() {
-        contractImplementation = payable(new RSCValve());
+        contractImplementation = new RSCValve();
     }
 
     /**
@@ -89,8 +87,7 @@ contract RSCValveFactory is Ownable {
                 _data.isImmutableRecipients,
                 _data.isAutoNativeCurrencyDistribution,
                 _data.minAutoDistributeAmount,
-                _data.initialRecipients,
-                _data.percentages,
+                _data.recipients,
                 _data.creationId,
                 _deployer
             )
@@ -109,7 +106,7 @@ contract RSCValveFactory is Ownable {
     ) external view returns (RSCValve) {
         bytes32 salt = _getSalt(_data, _deployer);
         address predictedAddress = Clones.predictDeterministicAddress(
-            contractImplementation,
+            address(contractImplementation),
             salt
         );
         return RSCValve(payable(predictedAddress));
@@ -125,9 +122,9 @@ contract RSCValveFactory is Ownable {
         address payable clone;
         if (creationId != bytes32(0)) {
             bytes32 salt = _getSalt(_data, msg.sender);
-            clone = payable(Clones.cloneDeterministic(contractImplementation, salt));
+            clone = payable(Clones.cloneDeterministic(address(contractImplementation), salt));
         } else {
-            clone = payable(Clones.clone(contractImplementation));
+            clone = payable(Clones.clone(address(contractImplementation)));
         }
 
         RSCValve(clone).initialize(
@@ -138,8 +135,7 @@ contract RSCValveFactory is Ownable {
             _data.isAutoNativeCurrencyDistribution,
             _data.minAutoDistributeAmount,
             platformFee,
-            _data.initialRecipients,
-            _data.percentages
+            _data.recipients
         );
 
         emit NewRSCValve(

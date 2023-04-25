@@ -32,8 +32,7 @@ describe("RSCValve", function () {
     isImmutableRecipients: any,
     isAutoNativeCurrencyDistribution: any,
     minAutoDistributeAmount: any,
-    initialRecipients: any,
-    percentages: any,
+    recipients: any,
     creationId: any
   ) {
     const tx = await rscValveFactory.createRSCValve({
@@ -42,8 +41,7 @@ describe("RSCValve", function () {
       isImmutableRecipients,
       isAutoNativeCurrencyDistribution,
       minAutoDistributeAmount,
-      initialRecipients,
-      percentages,
+      recipients,
       creationId,
     });
     const receipt = await tx.wait();
@@ -64,8 +62,7 @@ describe("RSCValve", function () {
       false,
       true,
       ethers.utils.parseEther("1"),
-      [alice.address],
-      [10000000],
+      [{ addrs: alice.address, percentage: 10000000 }],
       ethers.constants.HashZero
     );
     testToken = await new TestToken__factory(owner).deploy();
@@ -118,18 +115,18 @@ describe("RSCValve", function () {
 
   it("Should set recipients correctly", async () => {
     await expect(
-      rscValve
-        .connect(addr3)
-        .setRecipients(
-          [alice.address, addr3.address, addr4.address],
-          [2000000, 5000000, 3000000]
-        )
+      rscValve.connect(addr3).setRecipients([
+        { addrs: alice.address, percentage: 2000000 },
+        { addrs: addr3.address, percentage: 5000000 },
+        { addrs: addr4.address, percentage: 3000000 },
+      ])
     ).to.be.revertedWithCustomError(rscValve, "OnlyControllerError");
 
-    await rscValve.setRecipients(
-      [alice.address, addr3.address, addr4.address],
-      [2000000, 5000000, 3000000]
-    );
+    await rscValve.setRecipients([
+      { addrs: alice.address, percentage: 2000000 },
+      { addrs: addr3.address, percentage: 5000000 },
+      { addrs: addr4.address, percentage: 3000000 },
+    ]);
 
     expect(await rscValve.recipients(0)).to.be.equal(alice.address);
     expect(await rscValve.recipients(1)).to.be.equal(addr3.address);
@@ -146,10 +143,11 @@ describe("RSCValve", function () {
     expect(await rscValve.numberOfRecipients()).to.be.equal(3);
 
     await expect(
-      rscValve.setRecipients(
-        [alice.address, addr3.address, addr4.address],
-        [2000000, 5000000, 2000000]
-      )
+      rscValve.setRecipients([
+        { addrs: alice.address, percentage: 2000000 },
+        { addrs: addr3.address, percentage: 5000000 },
+        { addrs: addr4.address, percentage: 2000000 },
+      ])
     ).to.be.revertedWithCustomError(rscValve, "InvalidPercentageError");
 
     expect(await rscValve.recipients(0)).to.be.equal(alice.address);
@@ -166,10 +164,12 @@ describe("RSCValve", function () {
     );
     expect(await rscValve.numberOfRecipients()).to.be.equal(3);
 
-    await rscValve.setRecipients(
-      [addr5.address, addr4.address, addr3.address, alice.address],
-      [2000000, 2000000, 3000000, 3000000]
-    );
+    await rscValve.setRecipients([
+      { addrs: addr5.address, percentage: 2000000 },
+      { addrs: addr4.address, percentage: 2000000 },
+      { addrs: addr3.address, percentage: 3000000 },
+      { addrs: alice.address, percentage: 3000000 },
+    ]);
 
     expect(await rscValve.recipients(0)).to.be.equal(addr5.address);
     expect(await rscValve.recipients(1)).to.be.equal(addr4.address);
@@ -192,41 +192,45 @@ describe("RSCValve", function () {
     await rscValve.setController(ethers.constants.AddressZero);
 
     await expect(
-      rscValve.setRecipients(
-        [alice.address, addr3.address, addr4.address],
-        [2000000, 5000000, 3000000]
-      )
+      rscValve.setRecipients([
+        { addrs: alice.address, percentage: 2000000 },
+        { addrs: addr3.address, percentage: 5000000 },
+        { addrs: addr4.address, percentage: 3000000 },
+      ])
     ).to.be.revertedWithCustomError(rscValve, "OnlyControllerError");
   });
 
-  it("InconsistentDataLengthError()", async () => {
-    await expect(
-      rscValve.setRecipients(
-        [alice.address, addr3.address],
-        [2000000, 5000000, 3000000]
-      )
-    ).to.be.revertedWithCustomError(rscValve, "InconsistentDataLengthError");
+  // it("InconsistentDataLengthError()", async () => {
+  //   await expect(
+  //     rscValve.setRecipients(
+  //       [alice.address, addr3.address],
+  //       [2000000, 5000000, 3000000]
+  //     )
+  //   ).to.be.revertedWithCustomError(rscValve, "InconsistentDataLengthError");
 
-    await expect(
-      rscValve.setRecipients(
-        [alice.address, addr3.address, addr4.address],
-        [2000000, 5000000]
-      )
-    ).to.be.revertedWithCustomError(rscValve, "InconsistentDataLengthError");
-  });
+  //   await expect(
+  //     rscValve.setRecipients(
+  //       [alice.address, addr3.address, addr4.address],
+  //       [2000000, 5000000]
+  //     )
+  //   ).to.be.revertedWithCustomError(rscValve, "InconsistentDataLengthError");
+  // });
 
   it("NullAddressRecipientError()", async () => {
     await expect(
-      rscValve.setRecipients(
-        [alice.address, ethers.constants.AddressZero],
-        [5000000, 5000000]
-      )
+      rscValve.setRecipients([
+        { addrs: alice.address, percentage: 5000000 },
+        { addrs: ethers.constants.AddressZero, percentage: 5000000 },
+      ])
     ).to.be.revertedWithCustomError(rscValve, "NullAddressRecipientError");
   });
 
   it("RecipientAlreadyAddedError()", async () => {
     await expect(
-      rscValve.setRecipients([alice.address, alice.address], [5000000, 5000000])
+      rscValve.setRecipients([
+        { addrs: alice.address, percentage: 5000000 },
+        { addrs: alice.address, percentage: 5000000 },
+      ])
     ).to.be.revertedWithCustomError(rscValve, "RecipientAlreadyAddedError");
   });
 
@@ -240,10 +244,10 @@ describe("RSCValve", function () {
   it("TransferFailedError()", async () => {
     // With mock contract as recipient
     await rscValve.setAutoNativeCurrencyDistribution(false);
-    await rscValve.setRecipients(
-      [alice.address, mockReceiver.address],
-      [5000000, 5000000]
-    );
+    await rscValve.setRecipients([
+      { addrs: alice.address, percentage: 5000000 },
+      { addrs: mockReceiver.address, percentage: 5000000 },
+    ]);
     await owner.sendTransaction({
       to: rscValve.address,
       value: ethers.utils.parseEther("50"),
@@ -264,8 +268,10 @@ describe("RSCValve", function () {
       isImmutableRecipients: true,
       isAutoNativeCurrencyDistribution: false,
       minAutoDistributeAmount: ethers.utils.parseEther("1"),
-      initialRecipients: [alice.address, bob.address],
-      percentages: [5000000, 5000000],
+      recipients: [
+        { addrs: alice.address, percentage: 5000000 },
+        { addrs: bob.address, percentage: 5000000 },
+      ],
       creationId: ethers.constants.HashZero,
     });
     const receipt = await tx.wait();
@@ -285,10 +291,10 @@ describe("RSCValve", function () {
   });
 
   it("TooLowBalanceToRedistribute()", async () => {
-    await rscValve.setRecipients(
-      [alice.address, bob.address],
-      [2000000, 8000000]
-    );
+    await rscValve.setRecipients([
+      { addrs: alice.address, percentage: 2000000 },
+      { addrs: bob.address, percentage: 8000000 },
+    ]);
 
     // With ether
     const aliceBalanceBefore = (
@@ -318,24 +324,25 @@ describe("RSCValve", function () {
 
   it("Should set recipients correctly and set immutable recipients", async () => {
     await expect(
-      rscValve
-        .connect(addr3)
-        .setRecipientsExt(
-          [alice.address, addr3.address, addr4.address],
-          [2000000, 5000000, 3000000]
-        )
+      rscValve.connect(addr3).setRecipientsExt([
+        { addrs: alice.address, percentage: 2000000 },
+        { addrs: addr3.address, percentage: 5000000 },
+        { addrs: addr4.address, percentage: 3000000 },
+      ])
     ).to.be.revertedWithCustomError(rscValve, "OnlyControllerError");
 
-    await rscValve.setRecipients(
-      [alice.address, addr3.address, addr4.address],
-      [2000000, 5000000, 3000000]
-    );
+    await rscValve.setRecipients([
+      { addrs: alice.address, percentage: 2000000 },
+      { addrs: addr3.address, percentage: 5000000 },
+      { addrs: addr4.address, percentage: 3000000 },
+    ]);
 
     await expect(
-      rscValve.setRecipientsExt(
-        [alice.address, addr3.address, addr4.address],
-        [2000000, 5000000, 2000000]
-      )
+      rscValve.setRecipientsExt([
+        { addrs: alice.address, percentage: 2000000 },
+        { addrs: addr3.address, percentage: 5000000 },
+        { addrs: addr4.address, percentage: 2000000 },
+      ])
     ).to.be.revertedWithCustomError(rscValve, "InvalidPercentageError");
 
     expect(await rscValve.recipients(0)).to.be.equal(alice.address);
@@ -352,10 +359,12 @@ describe("RSCValve", function () {
     );
     expect(await rscValve.numberOfRecipients()).to.be.equal(3);
 
-    await rscValve.setRecipientsExt(
-      [addr5.address, addr4.address, addr3.address, alice.address],
-      [2000000, 2000000, 3000000, 3000000]
-    );
+    await rscValve.setRecipientsExt([
+      { addrs: addr5.address, percentage: 2000000 },
+      { addrs: addr4.address, percentage: 2000000 },
+      { addrs: addr3.address, percentage: 3000000 },
+      { addrs: alice.address, percentage: 3000000 },
+    ]);
 
     expect(await rscValve.recipients(0)).to.be.equal(addr5.address);
     expect(await rscValve.recipients(1)).to.be.equal(addr4.address);
@@ -376,25 +385,27 @@ describe("RSCValve", function () {
     expect(await rscValve.numberOfRecipients()).to.be.equal(4);
 
     await expect(
-      rscValve.setRecipientsExt(
-        [alice.address, addr3.address, addr4.address],
-        [2000000, 5000000, 3000000]
-      )
+      rscValve.setRecipientsExt([
+        { addrs: alice.address, percentage: 2000000 },
+        { addrs: addr3.address, percentage: 5000000 },
+        { addrs: addr4.address, percentage: 3000000 },
+      ])
     ).to.be.revertedWithCustomError(rscValve, "ImmutableRecipientsError");
 
     await expect(
-      rscValve.setRecipients(
-        [alice.address, addr3.address, addr4.address],
-        [2000000, 5000000, 3000000]
-      )
+      rscValve.setRecipients([
+        { addrs: alice.address, percentage: 2000000 },
+        { addrs: addr3.address, percentage: 5000000 },
+        { addrs: addr4.address, percentage: 3000000 },
+      ])
     ).to.be.revertedWithCustomError(rscValve, "ImmutableRecipientsError");
   });
 
   it("Should redistribute ETH correctly via receive()", async () => {
-    await rscValve.setRecipients(
-      [alice.address, bob.address],
-      [8000000, 2000000]
-    );
+    await rscValve.setRecipients([
+      { addrs: alice.address, percentage: 8000000 },
+      { addrs: bob.address, percentage: 2000000 },
+    ]);
 
     const aliceBalanceBefore = (
       await ethers.provider.getBalance(alice.address)
@@ -424,10 +435,10 @@ describe("RSCValve", function () {
   });
 
   it("Should redistribute ETH correctly", async () => {
-    await rscValve.setRecipients(
-      [alice.address, bob.address],
-      [8000000, 2000000]
-    );
+    await rscValve.setRecipients([
+      { addrs: alice.address, percentage: 8000000 },
+      { addrs: bob.address, percentage: 2000000 },
+    ]);
 
     expect(await rscValve.numberOfRecipients()).to.be.equal(2);
 
@@ -485,10 +496,10 @@ describe("RSCValve", function () {
   it("Should redistribute ERC20 token", async () => {
     await testToken.mint(rscValve.address, ethers.utils.parseEther("100"));
 
-    await rscValve.setRecipients(
-      [alice.address, bob.address],
-      [2000000, 8000000]
-    );
+    await rscValve.setRecipients([
+      { addrs: alice.address, percentage: 2000000 },
+      { addrs: bob.address, percentage: 8000000 },
+    ]);
 
     await rscValve.redistributeToken(testToken.address);
     expect(await testToken.balanceOf(rscValve.address)).to.be.equal(0);
@@ -536,8 +547,7 @@ describe("RSCValve", function () {
         true,
         ethers.utils.parseEther("1"),
         BigInt(0),
-        [alice.address],
-        [10000000]
+        [{ addrs: alice.address, percentage: 10000000 }]
       )
     ).to.be.revertedWith("Initializable: contract is already initialized");
   });
@@ -557,8 +567,10 @@ describe("RSCValve", function () {
       true,
       false,
       ethers.utils.parseEther("1"),
-      [alice.address, bob.address],
-      [5000000, 5000000],
+      [
+        { addrs: alice.address, percentage: 5000000 },
+        { addrs: bob.address, percentage: 5000000 },
+      ],
       ethers.constants.HashZero
     );
 
@@ -624,8 +636,7 @@ describe("RSCValve", function () {
       isImmutableRecipients: true,
       isAutoNativeCurrencyDistribution: true,
       minAutoDistributeAmount: ethers.utils.parseEther("1"),
-      initialRecipients: [alice.address],
-      percentages: [BigInt(10000000)],
+      recipients: [{ addrs: alice.address, percentage: BigInt(10000000) }],
       creationId: ethers.constants.HashZero,
     });
     const receipt = await txFee.wait();
@@ -685,8 +696,7 @@ describe("RSCValve", function () {
       isImmutableRecipients: true,
       isAutoNativeCurrencyDistribution: true,
       minAutoDistributeAmount: ethers.utils.parseEther("1"),
-      initialRecipients: [alice.address],
-      percentages: [BigInt(10000000)],
+      recipients: [{ addrs: alice.address, percentage: BigInt(10000000) }],
       creationId: ethers.utils.formatBytes32String("test-creation-id-1"),
     });
 
@@ -697,8 +707,7 @@ describe("RSCValve", function () {
         isImmutableRecipients: true,
         isAutoNativeCurrencyDistribution: true,
         minAutoDistributeAmount: ethers.utils.parseEther("1"),
-        initialRecipients: [alice.address],
-        percentages: [BigInt(10000000)],
+        recipients: [{ addrs: alice.address, percentage: BigInt(10000000) }],
         creationId: ethers.utils.formatBytes32String("test-creation-id-1"),
       })
     ).to.be.revertedWith("ERC1167: create2 failed");
@@ -709,8 +718,10 @@ describe("RSCValve", function () {
       isImmutableRecipients: true,
       isAutoNativeCurrencyDistribution: true,
       minAutoDistributeAmount: ethers.utils.parseEther("1"),
-      initialRecipients: [alice.address, bob.address],
-      percentages: [BigInt(5000000), BigInt(5000000)],
+      recipients: [
+        { addrs: alice.address, percentage: BigInt(5000000) },
+        { addrs: bob.address, percentage: BigInt(5000000) },
+      ],
       creationId: ethers.utils.formatBytes32String("test-creation-id-1"),
     });
 
@@ -720,8 +731,7 @@ describe("RSCValve", function () {
       isImmutableRecipients: true,
       isAutoNativeCurrencyDistribution: true,
       minAutoDistributeAmount: ethers.utils.parseEther("1"),
-      initialRecipients: [alice.address],
-      percentages: [BigInt(10000000)],
+      recipients: [{ addrs: alice.address, percentage: BigInt(10000000) }],
       creationId: ethers.utils.formatBytes32String("test-creation-id-2"),
     });
   });
@@ -733,8 +743,10 @@ describe("RSCValve", function () {
       true,
       false,
       ethers.utils.parseEther("1"),
-      [alice.address, bob.address],
-      [5000000, 5000000],
+      [
+        { addrs: alice.address, percentage: BigInt(5000000) },
+        { addrs: bob.address, percentage: BigInt(5000000) },
+      ],
       ethers.constants.HashZero
     );
 
@@ -744,8 +756,10 @@ describe("RSCValve", function () {
       true,
       false,
       ethers.utils.parseEther("1"),
-      [mockReceiver.address, rscValveThird.address],
-      [5000000, 5000000],
+      [
+        { addrs: mockReceiver.address, percentage: BigInt(5000000) },
+        { addrs: rscValveThird.address, percentage: BigInt(5000000) },
+      ],
       ethers.constants.HashZero
     );
 
@@ -755,8 +769,7 @@ describe("RSCValve", function () {
       true,
       false,
       ethers.utils.parseEther("1"),
-      [rscValveSecond.address],
-      [10000000],
+      [{ addrs: rscValveSecond.address, percentage: BigInt(10000000) }],
       ethers.constants.HashZero
     );
 
@@ -789,8 +802,10 @@ describe("RSCValve", function () {
       true,
       false,
       ethers.utils.parseEther("1"),
-      [alice.address, bob.address],
-      [5000000, 5000000],
+      [
+        { addrs: alice.address, percentage: BigInt(5000000) },
+        { addrs: bob.address, percentage: BigInt(5000000) },
+      ],
       ethers.constants.HashZero
     );
 
@@ -800,8 +815,10 @@ describe("RSCValve", function () {
       true,
       true,
       ethers.utils.parseEther("1"),
-      [alice.address, rscValveThird.address],
-      [5000000, 5000000],
+      [
+        { addrs: alice.address, percentage: BigInt(5000000) },
+        { addrs: rscValveThird.address, percentage: BigInt(5000000) },
+      ],
       ethers.constants.HashZero
     );
 
@@ -811,8 +828,7 @@ describe("RSCValve", function () {
       true,
       false,
       ethers.utils.parseEther("1"),
-      [rscValveSecond.address],
-      [10000000],
+      [{ addrs: rscValveSecond.address, percentage: BigInt(10000000) }],
       ethers.constants.HashZero
     );
 
@@ -847,10 +863,10 @@ describe("RSCValve", function () {
   });
 
   it("Should distribute small amounts correctly", async () => {
-    await rscValve.setRecipients(
-      [alice.address, bob.address],
-      [2000000, 8000000]
-    );
+    await rscValve.setRecipients([
+      { addrs: alice.address, percentage: BigInt(2000000) },
+      { addrs: bob.address, percentage: BigInt(8000000) },
+    ]);
 
     await testToken.mint(rscValve.address, BigInt(15000000));
 
@@ -877,10 +893,10 @@ describe("RSCValve", function () {
 
   it("Should distribute small ether amounts correctly", async () => {
     await rscValve.setMinAutoDistributionAmount(BigInt(10000000));
-    await rscValve.setRecipients(
-      [alice.address, bob.address],
-      [5000000, 5000000]
-    );
+    await rscValve.setRecipients([
+      { addrs: alice.address, percentage: 5000000 },
+      { addrs: bob.address, percentage: 5000000 },
+    ]);
 
     const aliceBalanceBefore1 = (
       await ethers.provider.getBalance(alice.address)

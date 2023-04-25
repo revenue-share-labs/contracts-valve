@@ -28,8 +28,7 @@ describe("RSCValve Max recipients test", () => {
       isImmutableRecipients: false,
       isAutoNativeCurrencyDistribution: true,
       minAutoDistributeAmount: ethers.utils.parseEther("1"),
-      initialRecipients: [owner.address],
-      percentages: [10000000],
+      recipients: [{ addrs: owner.address, percentage: 10000000 }],
       creationId: ethers.constants.HashZero,
     });
     const receipt = await tx.wait();
@@ -51,17 +50,20 @@ describe("RSCValve Max recipients test", () => {
 
   describe("Different recipients values", () => {
     it("Gas test with 16 recipients", async () => {
-      const recipients = randomSigners(16).map((signer) => signer.address);
+      const addrs = randomSigners(16).map((signer) => signer.address);
       const percentages: number[] = new Array(16).fill(625000);
+      const recipients = addrs.map((addrs, i) => {
+        return { addrs, percentage: percentages[i] };
+      });
 
-      await expect(rscValve.setRecipients(recipients, percentages)).to.emit(
+      await expect(rscValve.setRecipients(recipients)).to.emit(
         rscValve,
         "SetRecipients"
       );
       expect(await rscValve.numberOfRecipients()).to.be.equal(16);
 
-      const alice = recipients[0];
-      const bob = recipients[14];
+      const alice = recipients[0].addrs;
+      const bob = recipients[14].addrs;
       const aliceBalanceBefore = (
         await ethers.provider.getBalance(alice)
       ).toBigInt();
@@ -93,17 +95,20 @@ describe("RSCValve Max recipients test", () => {
     });
 
     it("Gas test with 25 recipients", async () => {
-      const recipients = randomSigners(25).map((signer) => signer.address);
+      const addrs = randomSigners(25).map((signer) => signer.address);
       const percentages: number[] = new Array(25).fill(400000);
+      const recipients = addrs.map((addrs, i) => {
+        return { addrs, percentage: percentages[i] };
+      });
 
-      await expect(rscValve.setRecipients(recipients, percentages)).to.emit(
+      await expect(rscValve.setRecipients(recipients)).to.emit(
         rscValve,
         "SetRecipients"
       );
       expect(await rscValve.numberOfRecipients()).to.be.equal(25);
 
-      const alice = recipients[3];
-      const bob = recipients[22];
+      const alice = recipients[3].addrs;
+      const bob = recipients[22].addrs;
       const aliceBalanceBefore = (
         await ethers.provider.getBalance(alice)
       ).toBigInt();
@@ -135,17 +140,20 @@ describe("RSCValve Max recipients test", () => {
     });
 
     it("Gas test with 40 recipients", async () => {
-      const recipients = randomSigners(40).map((signer) => signer.address);
+      const addrs = randomSigners(40).map((signer) => signer.address);
       const percentages: number[] = new Array(40).fill(250000);
+      const recipients = addrs.map((addrs, i) => {
+        return { addrs, percentage: percentages[i] };
+      });
 
-      await expect(rscValve.setRecipients(recipients, percentages)).to.emit(
+      await expect(rscValve.setRecipients(recipients)).to.emit(
         rscValve,
         "SetRecipients"
       );
       expect(await rscValve.numberOfRecipients()).to.be.equal(40);
 
-      const alice = recipients[15];
-      const bob = recipients[36];
+      const alice = recipients[15].addrs;
+      const bob = recipients[36].addrs;
       const aliceBalanceBefore = (
         await ethers.provider.getBalance(alice)
       ).toBigInt();
@@ -177,17 +185,20 @@ describe("RSCValve Max recipients test", () => {
     });
 
     it("Gas test with 50 recipients", async () => {
-      const recipients = randomSigners(50).map((signer) => signer.address);
+      const addrs = randomSigners(50).map((signer) => signer.address);
       const percentages: number[] = new Array(50).fill(200000);
+      const recipients = addrs.map((addrs, i) => {
+        return { addrs, percentage: percentages[i] };
+      });
 
-      await expect(rscValve.setRecipients(recipients, percentages)).to.emit(
+      await expect(rscValve.setRecipients(recipients)).to.emit(
         rscValve,
         "SetRecipients"
       );
       expect(await rscValve.numberOfRecipients()).to.be.equal(50);
 
-      const alice = recipients[7];
-      const bob = recipients[43];
+      const alice = recipients[7].addrs;
+      const bob = recipients[43].addrs;
       const aliceBalanceBefore = (
         await ethers.provider.getBalance(alice)
       ).toBigInt();
@@ -219,17 +230,20 @@ describe("RSCValve Max recipients test", () => {
     });
 
     it("Gas test with 80 recipients", async () => {
-      const recipients = randomSigners(80).map((signer) => signer.address);
+      const addrs = randomSigners(80).map((signer) => signer.address);
       const percentages: number[] = new Array(80).fill(125000);
+      const recipients = addrs.map((addrs, i) => {
+        return { addrs, percentage: percentages[i] };
+      });
 
-      await expect(rscValve.setRecipients(recipients, percentages)).to.emit(
+      await expect(rscValve.setRecipients(recipients)).to.emit(
         rscValve,
         "SetRecipients"
       );
       expect(await rscValve.numberOfRecipients()).to.be.equal(80);
 
-      const alice = recipients[9];
-      const bob = recipients[71];
+      const alice = recipients[9].addrs;
+      const bob = recipients[71].addrs;
       const aliceBalanceBefore = (
         await ethers.provider.getBalance(alice)
       ).toBigInt();
