@@ -1,5 +1,9 @@
 ## Summary
 
+Detailed documentation for each contract can be found [here](https://github.com/xla-rsc/contracts-valve/tree/main/docs/contracts).
+
+Deployment instructions descsribed in [Deployment.md](Deployment.md)
+
 1. The main ideas of RSC Valve SC is to redistribute tokens (whether they are ERC-20 or native cryptocurrency), to the participants based on the percentages assigned to them.
    - Percentages may have up to 5 decimal points.
    - The sum of all percentages must always be equal to 100% percentageSum == 10000000
