@@ -3,7 +3,7 @@
 ## Contract Description
 
 
-License: MIT
+License: BSL 1.1
 
 ## Errors info
 
