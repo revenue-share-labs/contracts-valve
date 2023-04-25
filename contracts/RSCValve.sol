@@ -269,9 +269,7 @@ contract RSCValve is OwnableUpgradeable {
      * @notice Internal function for setting recipients.
      * @param _recipients Array of `RecipientData` structs with recipient address and percentage.
      */
-    function _setRecipients(
-        RecipientData[] calldata _recipients
-    ) internal {
+    function _setRecipients(RecipientData[] calldata _recipients) internal {
         if (isImmutableRecipients) {
             revert ImmutableRecipientsError();
         }
@@ -300,9 +298,7 @@ contract RSCValve is OwnableUpgradeable {
      * @notice External function for setting recipients.
      * @param _recipients Array of `RecipientData` structs with recipient address and percentage.
      */
-    function setRecipients(
-        RecipientData[] calldata _recipients
-    ) public onlyController {
+    function setRecipients(RecipientData[] calldata _recipients) public onlyController {
         _setRecipients(_recipients);
     }
 
@@ -356,8 +352,11 @@ contract RSCValve is OwnableUpgradeable {
         address _distributor,
         bool _isDistributor
     ) external onlyOwner {
-        emit Distributor(_distributor, _isDistributor);
-        distributors[_distributor] = _isDistributor;
+        bool isDistributor = distributors[_distributor];
+        if (isDistributor != _isDistributor) {
+            emit Distributor(_distributor, _isDistributor);
+            distributors[_distributor] = _isDistributor;
+        }
     }
 
     /**
@@ -365,8 +364,10 @@ contract RSCValve is OwnableUpgradeable {
      * @param _controller Address of new controller.
      */
     function setController(address _controller) external onlyOwner {
-        emit Controller(_controller);
-        controller = _controller;
+        if (controller != _controller) {
+            emit Controller(_controller);
+            controller = _controller;
+        }
     }
 
     /**
@@ -440,8 +441,10 @@ contract RSCValve is OwnableUpgradeable {
      * @notice Internal function for setting immutable recipients to true.
      */
     function _setImmutableRecipients() internal {
-        emit ImmutableRecipients(true);
-        isImmutableRecipients = true;
+        if (!isImmutableRecipients) {
+            emit ImmutableRecipients(true);
+            isImmutableRecipients = true;
+        }
     }
 
     /**
@@ -462,8 +465,10 @@ contract RSCValve is OwnableUpgradeable {
     function setAutoNativeCurrencyDistribution(
         bool _isAutoNativeCurrencyDistribution
     ) external onlyOwner {
-        emit AutoNativeCurrencyDistribution(_isAutoNativeCurrencyDistribution);
-        isAutoNativeCurrencyDistribution = _isAutoNativeCurrencyDistribution;
+        if (isAutoNativeCurrencyDistribution != _isAutoNativeCurrencyDistribution) {
+            emit AutoNativeCurrencyDistribution(_isAutoNativeCurrencyDistribution);
+            isAutoNativeCurrencyDistribution = _isAutoNativeCurrencyDistribution;
+        }
     }
 
     /**
@@ -473,8 +478,10 @@ contract RSCValve is OwnableUpgradeable {
     function setMinAutoDistributionAmount(
         uint256 _minAutoDistributionAmount
     ) external onlyOwner {
-        emit MinAutoDistributionAmount(_minAutoDistributionAmount);
-        minAutoDistributionAmount = _minAutoDistributionAmount;
+        if (minAutoDistributionAmount != _minAutoDistributionAmount) {
+            emit MinAutoDistributionAmount(_minAutoDistributionAmount);
+            minAutoDistributionAmount = _minAutoDistributionAmount;
+        }
     }
 
     /**

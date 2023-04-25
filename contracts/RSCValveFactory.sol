@@ -122,7 +122,9 @@ contract RSCValveFactory is Ownable {
         address payable clone;
         if (creationId != bytes32(0)) {
             bytes32 salt = _getSalt(_data, msg.sender);
-            clone = payable(Clones.cloneDeterministic(address(contractImplementation), salt));
+            clone = payable(
+                Clones.cloneDeterministic(address(contractImplementation), salt)
+            );
         } else {
             clone = payable(Clones.clone(address(contractImplementation)));
         }
