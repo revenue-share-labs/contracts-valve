@@ -342,7 +342,7 @@ function renounceOwnership() external view;
 ```
 
 
-Leaves the contract without owner. It will not be possible to call `onlyOwner` functions anymore. Can only be called by the current owner. NOTE: Renouncing ownership will is forbidden for RSC contract
+Leaves the contract without owner. It will not be possible to call `onlyOwner` functions anymore. Can only be called by the current owner. NOTE: Renouncing ownership is forbidden for RSC contract.
 
 ### setAutoNativeCurrencyDistribution (0x3d39e377)
 

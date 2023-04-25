@@ -97,7 +97,7 @@ contract RSCValve is OwnableUpgradeable {
     event ImmutableRecipients(bool isImmutableRecipients);
 
     /**
-     * @dev Checks whether sender is distributor
+     * @dev Checks whether sender is distributor.
      */
     modifier onlyDistributor() {
         if (distributors[msg.sender] == false) {
@@ -107,7 +107,7 @@ contract RSCValve is OwnableUpgradeable {
     }
 
     /**
-     * @dev Checks whether sender is controller
+     * @dev Checks whether sender is controller.
      */
     modifier onlyController() {
         if (msg.sender != controller) {
@@ -488,7 +488,7 @@ contract RSCValve is OwnableUpgradeable {
      * @dev Leaves the contract without owner. It will not be possible to call
      * `onlyOwner` functions anymore. Can only be called by the current owner.
      *
-     * NOTE: Renouncing ownership will is forbidden for RSC contract
+     * NOTE: Renouncing ownership is forbidden for RSC contract.
      */
     function renounceOwnership() public view override onlyOwner {
         revert RenounceOwnershipForbidden();
