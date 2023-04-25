@@ -36,6 +36,10 @@ error RenounceOwnershipForbidden();
 /// Throw when amount to distribute is less than BASIS_POINT
 error TooLowBalanceToRedistribute();
 
+/// @title RSCValve contract.
+/// @notice The main function of RSCValve is to redistribute tokens 
+/// (whether they are ERC-20 or native cryptocurrency), to the participants 
+/// based on the percentages assigned to them.
 contract RSCValve is OwnableUpgradeable {
     using SafeERC20 for IERC20;
 
