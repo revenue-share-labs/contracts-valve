@@ -1,5 +1,9 @@
-name: Slither Analysis
-on: [push, pull_request]
+name: Run Slither Analysis
+
+on:
+  - push
+  - pull_request
+
 jobs:
   analyze:
     runs-on: ubuntu-latest
@@ -14,7 +18,7 @@ jobs:
         uses: crytic/slither-action@v0.3.0
         id: slither
         with:
-          node-version: 18
+          node-version: [18.x]
           sarif: results.sarif
           fail-on: none
 
