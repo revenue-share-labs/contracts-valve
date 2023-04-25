@@ -18,6 +18,26 @@ const config: HardhatUserConfig = {
       },
     ],
   },
+  networks: {
+    sepolia: {
+      url: process.env.SEPOLIA_RPC_URL,
+      accounts:
+        process.env.PRIVATE_KEY_MAINNET !== undefined
+          ? [process.env.PRIVATE_KEY_MAINNET]
+          : [],
+    },
+    mainnet: {
+      url: "https://ethereum.publicnode.com",
+      chainId: 1,
+      accounts:
+        process.env.PRIVATE_KEY_MAINNET !== undefined
+          ? [process.env.PRIVATE_KEY_MAINNET]
+          : [],
+    },
+  },
+  etherscan: {
+    apiKey: process.env.ETHERSCAN_API_KEY,
+  },
   paths: {
     artifacts: "./artifacts",
     cache: "./cache",
