@@ -50,8 +50,9 @@ describe("RSCValveFactory", () => {
 
   describe("Predict deterministic address", () => {
     it("Predicts address correctly", async () => {
+      const AbiCoder = new ethers.utils.AbiCoder();
       const salt = ethers.utils.keccak256(
-        ethers.utils.solidityPack(
+        AbiCoder.encode(
           [
             "address",
             "address[]",

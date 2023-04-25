@@ -629,6 +629,10 @@ describe("RSCValve", function () {
     expect(await rscValveFactory.platformWallet()).to.be.equal(addr5.address);
     expect(await rscValveFactory.platformFee()).to.be.equal(BigInt(5000000));
 
+    await expect(
+      rscValveFactory.setPlatformFee(BigInt(5000000))
+    ).to.be.revertedWithCustomError(rscValveFactory, "InvalidFeePercentage");
+
     const txFee = await rscValveFactory.createRSCValve({
       controller: owner.address,
       distributors: [owner.address],
