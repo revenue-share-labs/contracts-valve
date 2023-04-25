@@ -50,16 +50,16 @@ describe("RSCValveFactory", () => {
 
   describe("Predict deterministic address", () => {
     it("Predicts address correctly", async () => {
+      const AbiCoder = new ethers.utils.AbiCoder();
       const salt = ethers.utils.keccak256(
-        ethers.utils.solidityPack(
+        AbiCoder.encode(
           [
             "address",
             "address[]",
             "bool",
             "bool",
             "uint256",
-            "address[]",
-            "uint256[]",
+            "tuple(address addrs, uint256 percentage)[]",
             "bytes32",
             "address",
           ],
@@ -69,8 +69,7 @@ describe("RSCValveFactory", () => {
             false,
             true,
             0,
-            [owner.address],
-            [10000000],
+            [{ addrs: owner.address, percentage: 10000000 }],
             ethers.constants.HashZero,
             owner.address,
           ]
@@ -99,8 +98,7 @@ describe("RSCValveFactory", () => {
             isImmutableRecipients: false,
             isAutoNativeCurrencyDistribution: true,
             minAutoDistributeAmount: 0,
-            initialRecipients: [owner.address],
-            percentages: [10000000],
+            recipients: [{ addrs: owner.address, percentage: 10000000 }],
             creationId: ethers.constants.HashZero,
           },
           owner.address

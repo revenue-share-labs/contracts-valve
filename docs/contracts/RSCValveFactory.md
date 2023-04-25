@@ -5,30 +5,15 @@
 
 License: MIT
 
+
+Used to deploy RSCValve contracts.
+
 ## Events info
 
-### OwnershipTransferred event
+### NewRSCValve event
 
 ```solidity
-event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
-```
-
-### PlatformFeeChanged event
-
-```solidity
-event PlatformFeeChanged(uint256 oldFee, uint256 newFee);
-```
-
-### PlatformWalletChanged event
-
-```solidity
-event PlatformWalletChanged(address oldPlatformWallet, address newPlatformWallet);
-```
-
-### RSCValveCreated event
-
-```solidity
-event RSCValveCreated(
+event NewRSCValve(
 	address contractAddress,
 	address controller,
 	address[] distributors,
@@ -40,15 +25,63 @@ event RSCValveCreated(
 );
 ```
 
+
+Emitted when a new RSCValve is deployed.
+
+### OwnershipTransferred event
+
+```solidity
+event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
+```
+
+### PlatformFee event
+
+```solidity
+event PlatformFee(uint256 newFee);
+```
+
+
+Emitted when a platform fee is set.
+
+### PlatformWallet event
+
+```solidity
+event PlatformWallet(address newPlatformWallet);
+```
+
+
+Emitted when a platform wallet is set.
+
 ## Errors info
 
 ### InvalidFeePercentage error
 
 ```solidity
-error InvalidFeePercentage();
+error InvalidFeePercentage(uint256);
 ```
 
+
+Throw when Fee Percentage is more than 100%.
+
 ## Functions info
+
+### BASIS_POINT (0xada5f642)
+
+```solidity
+function BASIS_POINT() external view returns (uint256);
+```
+
+
+Measurement unit 10000000 = 100%.
+
+### VERSION (0xffa1ad74)
+
+```solidity
+function VERSION() external view returns (bytes32);
+```
+
+
+RSCValveFactory contract version.
 
 ### contractImplementation (0x9e72370b)
 
@@ -56,21 +89,24 @@ error InvalidFeePercentage();
 function contractImplementation() external view returns (address);
 ```
 
-### createRSCValve (0x02afbfe1)
+
+RSCValve implementation address.
+
+### createRSCValve (0x46c4d7ff)
 
 ```solidity
 function createRSCValve(tuple _data) external returns (address);
 ```
 
 
-Public function for creating clone proxy pointing to RSC Percentage
+Public function for creating clone proxy pointing to RSC Percentage.
 
 
 Parameters:
 
-| Name  | Type  | Description                                      |
-| :---- | :---- | :----------------------------------------------- |
-| _data | tuple | Initial data for creating new RSC Valve contract |
+| Name  | Type  | Description                                       |
+| :---- | :---- | :------------------------------------------------ |
+| _data | tuple | Initial data for creating new RSC Valve contract. |
 
 ### owner (0x8da5cb5b)
 
@@ -87,13 +123,19 @@ Returns the address of the current owner.
 function platformFee() external view returns (uint256);
 ```
 
+
+Current platform fee.
+
 ### platformWallet (0xfa2af9da)
 
 ```solidity
 function platformWallet() external view returns (address);
 ```
 
-### predictDeterministicAddress (0xa0c7b014)
+
+Fee receiver address.
+
+### predictDeterministicAddress (0xd78a6213)
 
 ```solidity
 function predictDeterministicAddress(
@@ -103,15 +145,15 @@ function predictDeterministicAddress(
 ```
 
 
-External function for creating clone proxy pointing to RSC Percentage
+External function for creating clone proxy pointing to RSC Percentage.
 
 
 Parameters:
 
-| Name      | Type    | Description                                              |
-| :-------- | :------ | :------------------------------------------------------- |
-| _data     | tuple   | RSC Create data used for hashing and getting random salt |
-| _deployer | address | Wallet address that want to create new RSC contract      |
+| Name      | Type    | Description                                               |
+| :-------- | :------ | :-------------------------------------------------------- |
+| _data     | tuple   | RSC Create data used for hashing and getting random salt. |
+| _deployer | address | Wallet address that want to create new RSC contract.      |
 
 ### renounceOwnership (0x715018a6)
 
@@ -129,14 +171,14 @@ function setPlatformFee(uint256 _fee) external;
 ```
 
 
-Only Owner function for setting platform fee
+Only Owner function for setting platform fee.
 
 
 Parameters:
 
-| Name | Type    | Description                                     |
-| :--- | :------ | :---------------------------------------------- |
-| _fee | uint256 | Percentage define platform fee 100% == 10000000 |
+| Name | Type    | Description                                         |
+| :--- | :------ | :-------------------------------------------------- |
+| _fee | uint256 | Percentage define platform fee 100% == BASIS_POINT. |
 
 ### setPlatformWallet (0x8831e9cf)
 
@@ -145,14 +187,14 @@ function setPlatformWallet(address _platformWallet) external;
 ```
 
 
-Owner function for setting platform fee
+Owner function for setting platform fee.
 
 
 Parameters:
 
-| Name            | Type    | Description                                       |
-| :-------------- | :------ | :------------------------------------------------ |
-| _platformWallet | address | New native currency wallet which will receive fee |
+| Name            | Type    | Description                                        |
+| :-------------- | :------ | :------------------------------------------------- |
+| _platformWallet | address | New native currency wallet which will receive fee. |
 
 ### transferOwnership (0xf2fde38b)
 
@@ -162,9 +204,3 @@ function transferOwnership(address newOwner) external;
 
 
 Transfers ownership of the contract to a new account (`newOwner`). Can only be called by the current owner.
-
-### version (0x54fd4d50)
-
-```solidity
-function version() external view returns (bytes32);
-```

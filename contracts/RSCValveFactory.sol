@@ -6,27 +6,47 @@ import "@openzeppelin/contracts/proxy/Clones.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./RSCValve.sol";
 
-// Throw when Fee Percentage is more than 100%
-error InvalidFeePercentage();
+/// Throw when Fee Percentage is more than 100%.
+error InvalidFeePercentage(uint256);
 
+/// @title RSCValve factory contract.
+/// @notice Used to deploy RSCValve contracts.
 contract RSCValveFactory is Ownable {
-    address payable public immutable contractImplementation;
-    bytes32 public constant version = "1.0";
+    /// Measurement unit 10000000 = 100%.
+    uint256 public constant BASIS_POINT = 10000000;
+
+    /// RSCValve implementation address.
+    RSCValve public immutable contractImplementation;
+
+    /// RSCValveFactory contract version.
+    bytes32 public constant VERSION = "1.0";
+
+    /// Current platform fee.
     uint256 public platformFee;
+
+    /// Fee receiver address.
     address payable public platformWallet;
 
+    /// RSCValve creation data struct.
     struct RSCValveCreateData {
+        /// Address of the controller (sets recipients).
         address controller;
+        /// Address of the distributors.
         address[] distributors;
+        /// Whether the recipients are modifiable or not.
         bool isImmutableRecipients;
+        /// Whether distribution is triggered on receive().
         bool isAutoNativeCurrencyDistribution;
+        /// Minimal amount to trigger auto distribution.
         uint256 minAutoDistributeAmount;
-        address payable[] initialRecipients;
-        uint256[] percentages;
+        /// Initial array of recipients addresses.
+        RSCValve.RecipientData[] recipients;
+        /// Creation id.
         bytes32 creationId;
     }
 
-    event RSCValveCreated(
+    /// Emitted when a new RSCValve is deployed.
+    event NewRSCValve(
         address contractAddress,
         address controller,
         address[] distributors,
@@ -37,35 +57,37 @@ contract RSCValveFactory is Ownable {
         bytes32 creationId
     );
 
-    event PlatformFeeChanged(uint256 oldFee, uint256 newFee);
+    /// Emitted when a platform fee is set.
+    event PlatformFee(uint256 newFee);
 
-    event PlatformWalletChanged(
-        address payable oldPlatformWallet,
-        address payable newPlatformWallet
-    );
+    /// Emitted when a platform wallet is set.
+    event PlatformWallet(address payable newPlatformWallet);
 
+    /** @notice Creates RSCValveFactory contract.
+     * @dev Deploys current RSCValve implementation contract
+     * and sets its address to `contractImplementation`.
+     */
     constructor() {
-        contractImplementation = payable(new RSCValve());
+        contractImplementation = new RSCValve();
     }
 
     /**
-     * @dev Internal function for getting semi-random salt for deterministicClone creation
-     * @param _data RSC Create data used for hashing and getting random salt
-     * @param _deployer Wallet address that want to create new RSC contract
+     * @dev Internal function for getting semi-random salt for deterministicClone creation.
+     * @param _data RSC Create data used for hashing and getting random salt.
+     * @param _deployer Wallet address that want to create new RSC contract.
      */
     function _getSalt(
         RSCValveCreateData memory _data,
         address _deployer
     ) internal pure returns (bytes32) {
         bytes32 hash = keccak256(
-            abi.encodePacked(
+            abi.encode(
                 _data.controller,
                 _data.distributors,
                 _data.isImmutableRecipients,
                 _data.isAutoNativeCurrencyDistribution,
                 _data.minAutoDistributeAmount,
-                _data.initialRecipients,
-                _data.percentages,
+                _data.recipients,
                 _data.creationId,
                 _deployer
             )
@@ -74,35 +96,37 @@ contract RSCValveFactory is Ownable {
     }
 
     /**
-     * @dev External function for creating clone proxy pointing to RSC Percentage
-     * @param _data RSC Create data used for hashing and getting random salt
-     * @param _deployer Wallet address that want to create new RSC contract
+     * @dev External function for creating clone proxy pointing to RSC Percentage.
+     * @param _data RSC Create data used for hashing and getting random salt.
+     * @param _deployer Wallet address that want to create new RSC contract.
      */
     function predictDeterministicAddress(
         RSCValveCreateData memory _data,
         address _deployer
-    ) external view returns (address) {
+    ) external view returns (RSCValve) {
         bytes32 salt = _getSalt(_data, _deployer);
         address predictedAddress = Clones.predictDeterministicAddress(
-            contractImplementation,
+            address(contractImplementation),
             salt
         );
-        return predictedAddress;
+        return RSCValve(payable(predictedAddress));
     }
 
     /**
-     * @dev Public function for creating clone proxy pointing to RSC Percentage
-     * @param _data Initial data for creating new RSC Valve contract
+     * @dev Public function for creating clone proxy pointing to RSC Percentage.
+     * @param _data Initial data for creating new RSC Valve contract.
      */
-    function createRSCValve(RSCValveCreateData memory _data) external returns (address) {
+    function createRSCValve(RSCValveCreateData memory _data) external returns (RSCValve) {
         // check and register creationId
         bytes32 creationId = _data.creationId;
         address payable clone;
         if (creationId != bytes32(0)) {
             bytes32 salt = _getSalt(_data, msg.sender);
-            clone = payable(Clones.cloneDeterministic(contractImplementation, salt));
+            clone = payable(
+                Clones.cloneDeterministic(address(contractImplementation), salt)
+            );
         } else {
-            clone = payable(Clones.clone(contractImplementation));
+            clone = payable(Clones.clone(address(contractImplementation)));
         }
 
         RSCValve(clone).initialize(
@@ -113,43 +137,43 @@ contract RSCValveFactory is Ownable {
             _data.isAutoNativeCurrencyDistribution,
             _data.minAutoDistributeAmount,
             platformFee,
-            address(this),
-            _data.initialRecipients,
-            _data.percentages
+            _data.recipients
         );
 
-        emit RSCValveCreated(
+        emit NewRSCValve(
             clone,
             _data.controller,
             _data.distributors,
-            version,
+            VERSION,
             _data.isImmutableRecipients,
             _data.isAutoNativeCurrencyDistribution,
             _data.minAutoDistributeAmount,
             creationId
         );
 
-        return clone;
+        return RSCValve(clone);
     }
 
     /**
-     * @dev Only Owner function for setting platform fee
-     * @param _fee Percentage define platform fee 100% == 10000000
+     * @dev Only Owner function for setting platform fee.
+     * @param _fee Percentage define platform fee 100% == BASIS_POINT.
      */
     function setPlatformFee(uint256 _fee) external onlyOwner {
-        if (_fee > 10000000) {
-            revert InvalidFeePercentage();
+        if (_fee > BASIS_POINT || _fee == platformFee) {
+            revert InvalidFeePercentage(_fee);
         }
-        emit PlatformFeeChanged(platformFee, _fee);
+        emit PlatformFee(_fee);
         platformFee = _fee;
     }
 
     /**
-     * @dev Owner function for setting platform fee
-     * @param _platformWallet New native currency wallet which will receive fee
+     * @dev Owner function for setting platform fee.
+     * @param _platformWallet New native currency wallet which will receive fee.
      */
     function setPlatformWallet(address payable _platformWallet) external onlyOwner {
-        emit PlatformWalletChanged(platformWallet, _platformWallet);
-        platformWallet = _platformWallet;
+        if (_platformWallet != platformWallet) {
+            emit PlatformWallet(_platformWallet);
+            platformWallet = _platformWallet;
+        }
     }
 }
