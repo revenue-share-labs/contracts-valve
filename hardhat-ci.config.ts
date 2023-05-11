@@ -4,7 +4,7 @@ import "hardhat-contract-sizer";
 
 const config: HardhatUserConfig = {
   solidity: {
-    version: "0.8.19",
+    version: "0.8.20",
   },
   defaultNetwork: "hardhat",
   paths: {
