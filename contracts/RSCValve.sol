@@ -439,6 +439,8 @@ contract RSCValve is OwnableUpgradeable {
 
     /**
      * @notice Internal function for setting immutable recipients to true.
+     * @dev Can only be called from controller or contract owner via
+     * `setImmutableRecipients()` or `setRecipientsExt()`
      */
     function _setImmutableRecipients() internal {
         if (!isImmutableRecipients) {

@@ -13,17 +13,15 @@ Deployment instructions described in [Deployment.md](scripts/Deployment.md)
 1. Every ERC-20 token must be manually redistributed using the redistributeToken() method.
 1. The contract must always redistribute 100% of the tokens between recipients, and it is not possible to have a contract without recipients or with less than 100% shares assigned.
 1. The distribution of native cryptocurrency and ERC-20 tokens can only be done by the one of the distributors. Distributors can be added or removed by the owner. However, native cryptocurrency distribution can be done by anyone if isAutoNativeCurrencyDistribution is true.
-1. The recipients can only be changed by the controller. If controller is zero address, then recipients cannot be changed. In this case we refer to it as immutable recipients, however the contract itself does not have immutability attribute for recipients.
-1. Controller can be changed by the owner of the Valve contract only if (both statements below should pass):
-   - Controller is NOT zero address
-   - isImmutableController is FALSE
+1. The recipients addresses controlled with two roles: owner and controller. Controller has the ability to set recipients addresses and set immutable recipients flag. Owner also can set immutable recipients, but can't change/set recipients addresses. Setting immutable flag makes further recipients changes impossible.
+1. Controller can be changed only by the owner of the Valve contract.
 
 ## Actors and use cases
 
-- owner → Address that has the capability to set the distributor / controller;
+- owner → Address that has the capability to set the distributor / controller and set immutable recipients;
 - recipients → Addresses which will receive redistributed currency or ERC-20 tokens according to percentage;
 - distributors → Addresses which can distribute ERC-20 tokens locked in contract;
-- controller → Address which can set recipients. If none (assigned to 0 address) then contract is immutable;
+- controller → Address which can set recipients;
 - factory → Address of the factory that was used for contract creation. It is used for getting platformWallet which receives Fee from contract usage;
 
 ## Functions
@@ -58,5 +56,4 @@ Deployment instructions described in [Deployment.md](scripts/Deployment.md)
 | setMinAutoDistributionAmount(uint256 \_minAutoDistributionAmount)          |                                                                                                                                                                                This function allows setting a minimum auto distribution amount(numerically).                                                                                                                                                                                |
 | setRecipients(address[] recipients, uint256[] percentages)                 |                                                                                                                                                                                                 This function enables to change recipients.                                                                                                                                                                                                 |
 | transferOwnership(address newOwner) -> bool                                |                                                                                                                                                                                      Transfers ownership of the contract to a new account (newOwner).                                                                                                                                                                                       |
-| fallback()                                                                 |                                                                                                                                                         This function is activated when native tokens are directly sent to the contract or when a non-existent function is invoked.                                                                                                                                                         |
 | receive()                                                                  | This function is called when native cryptocurrency is sent directly to the contract. It automatically redistributes received cryptocurrency to the recipients. If the isAutoNativeCurrencyDistribution is set to true, this function will distribute native tokens received to the recipients. However, for this to occur, the contract's balance must exceed the minimum amount set for automatic distribution, minAutoDistributionAmount. |
