@@ -15,6 +15,9 @@ contract RSCValveFactory is Ownable {
     /// Measurement unit 10000000 = 100%.
     uint256 public constant BASIS_POINT = 10000000;
 
+    /// Maximum fee value 5000000 = 50%.
+    uint256 public constant FEE_BOUND = 5000000;
+
     /// RSCValve implementation address.
     RSCValve public immutable contractImplementation;
 
@@ -159,7 +162,7 @@ contract RSCValveFactory is Ownable {
      * @param _fee Percentage define platform fee 100% == BASIS_POINT.
      */
     function setPlatformFee(uint256 _fee) external onlyOwner {
-        if (_fee > BASIS_POINT || _fee == platformFee) {
+        if (_fee > FEE_BOUND || _fee == platformFee) {
             revert InvalidFeePercentage(_fee);
         }
         emit PlatformFee(_fee);

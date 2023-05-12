@@ -74,6 +74,15 @@ function BASIS_POINT() external view returns (uint256);
 
 Measurement unit 10000000 = 100%.
 
+### FEE_BOUND (0x29e4f362)
+
+```solidity
+function FEE_BOUND() external view returns (uint256);
+```
+
+
+Maximum fee value 5000000 = 50%.
+
 ### VERSION (0xffa1ad74)
 
 ```solidity
