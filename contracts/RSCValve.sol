@@ -380,15 +380,13 @@ contract RSCValve is OwnableUpgradeable {
      * @param _token Token to be distributed.
      */
     function _recursiveERC20Distribution(address _recipient, IERC20 _token) internal {
-        // Handle Recursive token distribution
-        IRecursiveRSC recursiveRecipient = IRecursiveRSC(_recipient);
-
         // Wallets have size 0 and contracts > 0. This way we can distinguish them.
         uint256 recipientSize;
         assembly {
             recipientSize := extcodesize(_recipient)
         }
         if (recipientSize > 0) {
+            IRecursiveRSC recursiveRecipient = IRecursiveRSC(_recipient);
             // Validate this contract is distributor in child recipient
             try recursiveRecipient.distributors(address(this)) returns (
                 bool isBranchDistributor
@@ -407,15 +405,13 @@ contract RSCValve is OwnableUpgradeable {
      * @param _recipient Address of recipient to recursively distribute.
      */
     function _recursiveNativeCurrencyDistribution(address _recipient) internal {
-        // Handle Recursive token distribution
-        IRecursiveRSC recursiveRecipient = IRecursiveRSC(_recipient);
-
         // Wallets have size 0 and contracts > 0. This way we can distinguish them.
         uint256 recipientSize;
         assembly {
             recipientSize := extcodesize(_recipient)
         }
         if (recipientSize > 0) {
+            IRecursiveRSC recursiveRecipient = IRecursiveRSC(_recipient);
             // Check whether child recipient have autoNativeCurrencyDistribution set to true,
             // if yes tokens will be recursively distributed automatically
             try recursiveRecipient.isAutoNativeCurrencyDistribution() returns (
