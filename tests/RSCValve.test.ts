@@ -290,11 +290,14 @@ describe("RSCValve", function () {
     ).to.be.revertedWithCustomError(rscValveFee, "TransferFailedError");
   });
 
-  it("TooLowBalanceToRedistribute()", async () => {
+  it("TooLowValueToRedistribute()", async () => {
     await rscValve.setRecipients([
       { addrs: alice.address, percentage: 2000000 },
       { addrs: bob.address, percentage: 8000000 },
     ]);
+    await expect(
+      rscValve.setMinAutoDistributionAmount(1000000)
+    ).to.be.revertedWithCustomError(rscValve, "TooLowValueToRedistribute");
 
     // With ether
     const aliceBalanceBefore = (
@@ -310,7 +313,7 @@ describe("RSCValve", function () {
     });
     await expect(
       rscValve.redistributeNativeCurrency()
-    ).to.be.revertedWithCustomError(rscValve, "TooLowBalanceToRedistribute");
+    ).to.be.revertedWithCustomError(rscValve, "TooLowValueToRedistribute");
 
     const aliceBalanceAfter = (
       await ethers.provider.getBalance(alice.address)

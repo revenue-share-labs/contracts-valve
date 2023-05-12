@@ -34,7 +34,7 @@ error ImmutableRecipientsError();
 error RenounceOwnershipForbidden();
 
 /// Throw when amount to distribute is less than BASIS_POINT
-error TooLowBalanceToRedistribute();
+error TooLowValueToRedistribute();
 
 /// @title RSCValve contract.
 /// @notice The main function of RSCValve is to redistribute tokens
@@ -197,7 +197,7 @@ contract RSCValve is OwnableUpgradeable {
         _valueToDistribute -= fee;
 
         if (_valueToDistribute < BASIS_POINT) {
-            revert TooLowBalanceToRedistribute();
+            revert TooLowValueToRedistribute();
         }
 
         if (fee != 0) {
@@ -482,6 +482,9 @@ contract RSCValve is OwnableUpgradeable {
     function setMinAutoDistributionAmount(
         uint256 _minAutoDistributionAmount
     ) external onlyOwner {
+        if (_minAutoDistributionAmount < BASIS_POINT) {
+            revert TooLowValueToRedistribute();
+        }
         if (minAutoDistributionAmount != _minAutoDistributionAmount) {
             emit MinAutoDistributionAmount(_minAutoDistributionAmount);
             minAutoDistributionAmount = _minAutoDistributionAmount;
