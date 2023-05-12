@@ -13,7 +13,8 @@ Deployment instructions described in [Deployment.md](scripts/Deployment.md)
 1. Every ERC-20 token must be manually redistributed using the redistributeToken() method.
 1. The contract must always redistribute 100% of the tokens between recipients, and it is not possible to have a contract without recipients or with less than 100% shares assigned.
 1. The distribution of native cryptocurrency and ERC-20 tokens can only be done by the one of the distributors. Distributors can be added or removed by the owner. However, native cryptocurrency distribution can be done by anyone if isAutoNativeCurrencyDistribution is true.
-1. The recipients addresses controlled with two roles: owner and controller. Controller has the ability to set recipients addresses and set immutable recipients flag. Owner also can set immutable recipients, but can't change/set recipients addresses. Setting immutable flag makes further recipients changes impossible.
+1. The recipients can only be changed by the controller and only if `isImmutableRecipients = false` Controller can be changed by the owner of the Valve contract. Owner of the contract can set `isImmutableRecipients` on contract creation. If upon initialisation `isImmutableRecipients` is false, then at some point the owner can “lock recipients“ - make them immutable - by setting `isImmutableRecipients = true;`
+1. If `isImmutableRecipients = true`, then: recipients can NOT be changed and `isImmutableRecipients` CAN’T be set to false.
 1. Controller can be changed only by the owner of the Valve contract.
 
 ## Actors and use cases
