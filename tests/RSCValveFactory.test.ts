@@ -106,4 +106,23 @@ describe("RSCValveFactory", () => {
       ).to.be.equal(create2Addr);
     });
   });
+
+  it("setPlatformFee()", async () => {
+    await expect(
+      rscValveFactory.connect(alice).setPlatformFee(2500000)
+    ).to.be.revertedWith("Ownable: caller is not the owner");
+
+    await rscValveFactory.setPlatformFee(2500000);
+    expect(await rscValveFactory.platformFee()).to.be.equal(2500000);
+    await expect(
+      rscValveFactory.setPlatformFee(5100000)
+    ).to.be.revertedWithCustomError(rscValveFactory, "InvalidFeePercentage");
+
+    expect(await rscValveFactory.platformFee()).to.be.equal(2500000);
+
+    await expect(
+      rscValveFactory.setPlatformFee(2500000)
+    ).to.be.revertedWithCustomError(rscValveFactory, "InvalidFeePercentage");
+    expect(await rscValveFactory.platformFee()).to.be.equal(2500000);
+  });
 });

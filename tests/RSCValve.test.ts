@@ -611,27 +611,11 @@ describe("RSCValve", function () {
   });
 
   it("Should work with fees Correctly", async () => {
-    await expect(
-      rscValveFactory.connect(alice).setPlatformFee(BigInt(1))
-    ).to.be.revertedWith("Ownable: caller is not the owner");
-
-    await expect(
-      rscValveFactory.setPlatformFee(BigInt(10000001))
-    ).to.be.revertedWithCustomError(rscValveFactory, "InvalidFeePercentage");
-
-    await expect(
-      rscValveFactory.connect(alice).setPlatformWallet(addr4.address)
-    ).to.be.revertedWith("Ownable: caller is not the owner");
-
     await rscValveFactory.setPlatformWallet(addr5.address);
     await rscValveFactory.setPlatformFee(BigInt(5000000));
 
     expect(await rscValveFactory.platformWallet()).to.be.equal(addr5.address);
     expect(await rscValveFactory.platformFee()).to.be.equal(BigInt(5000000));
-
-    await expect(
-      rscValveFactory.setPlatformFee(BigInt(5000000))
-    ).to.be.revertedWithCustomError(rscValveFactory, "InvalidFeePercentage");
 
     const txFee = await rscValveFactory.createRSCValve({
       controller: owner.address,
