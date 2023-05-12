@@ -194,15 +194,15 @@ contract RSCValve is OwnableUpgradeable {
      */
     function _redistributeNativeCurrency(uint256 _valueToDistribute) internal {
         uint256 fee = (_valueToDistribute * platformFee) / BASIS_POINT;
-        _valueToDistribute -= fee;
 
-        if (_valueToDistribute < BASIS_POINT) {
+        if (_valueToDistribute + fee < BASIS_POINT) {
             revert TooLowValueToRedistribute();
         }
 
-        if (fee != 0) {
+        if (fee > 0) {
             address payable platformWallet = factory.platformWallet();
             if (platformWallet != address(0)) {
+                _valueToDistribute -= fee;
                 (bool success, ) = platformWallet.call{ value: fee }("");
                 if (!success) {
                     revert TransferFailedError();
@@ -323,17 +323,18 @@ contract RSCValve is OwnableUpgradeable {
      */
     function redistributeToken(IERC20 _token) external onlyDistributor {
         uint256 contractBalance = _token.balanceOf(address(this));
-
         uint256 fee = (contractBalance * platformFee) / BASIS_POINT;
-        contractBalance -= fee;
-
-        uint256 recipientsLength = recipients.length;
-
-        address payable platformWallet = factory.platformWallet();
-        if (fee != 0 && platformWallet != address(0)) {
-            _token.safeTransfer(platformWallet, fee);
+        if (fee > 0) {
+            address payable platformWallet = factory.platformWallet();
+            if (platformWallet != address(0)) {
+                contractBalance -= fee;
+                _token.safeTransfer(platformWallet, fee);
+            }
         }
 
+        emit DistributeToken(_token, contractBalance);
+
+        uint256 recipientsLength = recipients.length;
         for (uint256 i = 0; i < recipientsLength; ) {
             address payable recipient = recipients[i];
             uint256 percentage = recipientsPercentage[recipient];
@@ -344,7 +345,6 @@ contract RSCValve is OwnableUpgradeable {
                 i++;
             }
         }
-        emit DistributeToken(_token, contractBalance);
     }
 
     /**
