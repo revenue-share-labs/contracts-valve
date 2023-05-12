@@ -428,7 +428,7 @@ function setRecipients(tuple[] _recipients) external;
 ```
 
 
-Public function for setting recipients.
+External function for setting recipients.
 
 
 Parameters:
@@ -444,7 +444,7 @@ function setRecipientsExt(tuple[] _recipients) external;
 ```
 
 
-Public function for setting immutable recipients.
+External function for setting immutable recipients.
 
 
 Parameters:
