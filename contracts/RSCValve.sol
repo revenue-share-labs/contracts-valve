@@ -299,7 +299,7 @@ contract RSCValve is OwnableUpgradeable {
     }
 
     /**
-     * @notice External function for setting recipients.
+     * @notice Public function for setting recipients.
      * @param _recipients Array of `RecipientData` structs with recipient address and percentage.
      */
     function setRecipients(RecipientData[] calldata _recipients) public onlyController {
@@ -307,7 +307,7 @@ contract RSCValve is OwnableUpgradeable {
     }
 
     /**
-     * @notice External function for setting immutable recipients.
+     * @notice Public function for setting immutable recipients.
      * @param _recipients Array of `RecipientData` structs with recipient address and percentage.
      */
     function setRecipientsExt(

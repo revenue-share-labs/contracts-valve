@@ -153,10 +153,10 @@ error RenounceOwnershipForbidden();
 
 Throw when renounce ownership is called
 
-### TooLowBalanceToRedistribute error
+### TooLowValueToRedistribute error
 
 ```solidity
-error TooLowBalanceToRedistribute();
+error TooLowValueToRedistribute();
 ```
 
 
@@ -428,7 +428,7 @@ function setRecipients(tuple[] _recipients) external;
 ```
 
 
-External function for setting recipients.
+Public function for setting recipients.
 
 
 Parameters:
@@ -444,7 +444,7 @@ function setRecipientsExt(tuple[] _recipients) external;
 ```
 
 
-External function for setting immutable recipients.
+Public function for setting immutable recipients.
 
 
 Parameters:
