@@ -140,7 +140,7 @@ contract RSCValve is OwnableUpgradeable {
         uint256 _minAutoDistributionAmount,
         uint256 _platformFee,
         RecipientData[] calldata _recipients
-    ) public initializer {
+    ) external initializer {
         uint256 distributorsLength = _distributors.length;
         for (uint256 i = 0; i < distributorsLength; ) {
             emit Distributor(_distributors[i], true);
@@ -299,20 +299,20 @@ contract RSCValve is OwnableUpgradeable {
     }
 
     /**
-     * @notice Public function for setting recipients.
+     * @notice External function for setting recipients.
      * @param _recipients Array of `RecipientData` structs with recipient address and percentage.
      */
-    function setRecipients(RecipientData[] calldata _recipients) public onlyController {
+    function setRecipients(RecipientData[] calldata _recipients) external onlyController {
         _setRecipients(_recipients);
     }
 
     /**
-     * @notice Public function for setting immutable recipients.
+     * @notice External function for setting immutable recipients.
      * @param _recipients Array of `RecipientData` structs with recipient address and percentage.
      */
     function setRecipientsExt(
         RecipientData[] calldata _recipients
-    ) public onlyController {
+    ) external onlyController {
         _setRecipients(_recipients);
         _setImmutableRecipients();
     }
