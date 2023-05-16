@@ -7,15 +7,12 @@ import {
   RSCValveFactory,
   RSCValveFactory__factory,
   RSCValve__factory,
-  TestToken,
-  TestToken__factory,
 } from "../typechain-types";
 import { randomSigners, snapshot } from "./utils";
 
 describe("RSCValve Max recipients test", () => {
   let rscValveFactory: RSCValveFactory,
     rscValve: RSCValve,
-    testToken: TestToken,
     owner: SignerWithAddress,
     snapId: string;
 
@@ -26,7 +23,7 @@ describe("RSCValve Max recipients test", () => {
       controller: owner.address,
       distributors: [owner.address],
       isImmutableRecipients: false,
-      isAutoNativeCurrencyDistribution: true,
+      isAutoNativeCurrencyDistribution: false,
       minAutoDistributeAmount: ethers.utils.parseEther("1"),
       recipients: [{ addrs: owner.address, percentage: 10000000 }],
       creationId: ethers.constants.HashZero,
@@ -37,7 +34,6 @@ describe("RSCValve Max recipients test", () => {
       revenueShareContractAddress,
       owner
     );
-    testToken = await new TestToken__factory(owner).deploy();
   });
 
   beforeEach(async () => {
@@ -71,10 +67,11 @@ describe("RSCValve Max recipients test", () => {
         await ethers.provider.getBalance(bob)
       ).toBigInt();
 
-      const tx = await owner.sendTransaction({
+      await owner.sendTransaction({
         to: rscValve.address,
         value: ethers.utils.parseEther("50"),
       });
+      const tx = await rscValve.redistributeNativeCurrency();
       const receipt = tx.wait();
       const totalGasUsed = (await receipt).gasUsed.toNumber();
       console.log("16 recipient gas used: ", totalGasUsed);
@@ -116,10 +113,11 @@ describe("RSCValve Max recipients test", () => {
         await ethers.provider.getBalance(bob)
       ).toBigInt();
 
-      const tx = await owner.sendTransaction({
+      await owner.sendTransaction({
         to: rscValve.address,
         value: ethers.utils.parseEther("50"),
       });
+      const tx = await rscValve.redistributeNativeCurrency();
       const receipt = tx.wait();
       const totalGasUsed = (await receipt).gasUsed.toNumber();
       console.log("25 recipient gas used: ", totalGasUsed);
@@ -161,10 +159,11 @@ describe("RSCValve Max recipients test", () => {
         await ethers.provider.getBalance(bob)
       ).toBigInt();
 
-      const tx = await owner.sendTransaction({
+      await owner.sendTransaction({
         to: rscValve.address,
         value: ethers.utils.parseEther("50"),
       });
+      const tx = await rscValve.redistributeNativeCurrency();
       const receipt = tx.wait();
       const totalGasUsed = (await receipt).gasUsed.toNumber();
       console.log("40 recipient gas used: ", totalGasUsed);
@@ -206,10 +205,11 @@ describe("RSCValve Max recipients test", () => {
         await ethers.provider.getBalance(bob)
       ).toBigInt();
 
-      const tx = await owner.sendTransaction({
+      await owner.sendTransaction({
         to: rscValve.address,
         value: ethers.utils.parseEther("50"),
       });
+      const tx = await rscValve.redistributeNativeCurrency();
       const receipt = tx.wait();
       const totalGasUsed = (await receipt).gasUsed.toNumber();
       console.log("50 recipient gas used: ", totalGasUsed);
@@ -251,10 +251,11 @@ describe("RSCValve Max recipients test", () => {
         await ethers.provider.getBalance(bob)
       ).toBigInt();
 
-      const tx = await owner.sendTransaction({
+      await owner.sendTransaction({
         to: rscValve.address,
         value: ethers.utils.parseEther("50"),
       });
+      const tx = await rscValve.redistributeNativeCurrency();
       const receipt = tx.wait();
       const totalGasUsed = (await receipt).gasUsed.toNumber();
       console.log("80 recipient gas used: ", totalGasUsed);

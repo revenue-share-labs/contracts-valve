@@ -173,6 +173,15 @@ Throw when transaction fails
 
 ## Functions info
 
+### AUTO_DISTRIBUTION_MAX_RECIPIENTS (0x325bc8e9)
+
+```solidity
+function AUTO_DISTRIBUTION_MAX_RECIPIENTS() external view returns (uint256);
+```
+
+
+Max amount of recipients for auto-distribution.
+
 ### BASIS_POINT (0xada5f642)
 
 ```solidity
