@@ -46,6 +46,9 @@ contract RSCValve is OwnableUpgradeable {
     /// Measurement unit 10000000 = 100%.
     uint256 public constant BASIS_POINT = 10000000;
 
+    /// Max amount of recipients for auto-distribution.
+    uint256 public constant AUTO_DISTRIBUTION_MAX_RECIPIENTS = 35;
+
     /// distributorAddress => isDistributor
     mapping(address => bool) public distributors;
 
@@ -172,10 +175,12 @@ contract RSCValve is OwnableUpgradeable {
     receive() external payable {
         // Check whether automatic native currency distribution is enabled
         // and that contractBalance is more than automatic distribution threshold
+        // and that amount of recipients is less than AUTO_DISTRIBUTION_MAX_RECIPIENTS
         uint256 contractBalance = address(this).balance;
         if (
             isAutoNativeCurrencyDistribution &&
-            contractBalance >= minAutoDistributionAmount
+            contractBalance >= minAutoDistributionAmount &&
+            recipients.length <= AUTO_DISTRIBUTION_MAX_RECIPIENTS
         ) {
             _redistributeNativeCurrency(contractBalance);
         }

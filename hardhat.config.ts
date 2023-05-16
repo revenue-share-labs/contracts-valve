@@ -19,6 +19,9 @@ const config: HardhatUserConfig = {
     ],
   },
   networks: {
+    hardhat: {
+      gasPrice: 45000000000, // 45 Gwei
+    },
     sepolia: {
       url: process.env.SEPOLIA_RPC_URL,
       accounts:
