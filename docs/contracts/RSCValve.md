@@ -106,12 +106,12 @@ error InvalidPercentageError(uint256);
 ```
 
 
-Throw when sum of percentage is not 100%
+Throw when percentage is not 100%
 
-### NullAddressRecipientError error
+### NullAddressError error
 
 ```solidity
-error NullAddressRecipientError();
+error NullAddressError();
 ```
 
 

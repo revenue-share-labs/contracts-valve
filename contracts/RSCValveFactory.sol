@@ -6,9 +6,6 @@ import "@openzeppelin/contracts/proxy/Clones.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./RSCValve.sol";
 
-/// Throw when Fee Percentage is more than 100%.
-error InvalidFeePercentage(uint256);
-
 /// @title RSCValve factory contract.
 /// @notice Used to deploy RSCValve contracts.
 contract RSCValveFactory is Ownable {
@@ -163,7 +160,7 @@ contract RSCValveFactory is Ownable {
      */
     function setPlatformFee(uint256 _fee) external onlyOwner {
         if (_fee > FEE_BOUND || _fee == platformFee) {
-            revert InvalidFeePercentage(_fee);
+            revert InvalidPercentageError(_fee);
         }
         emit PlatformFee(_fee);
         platformFee = _fee;
@@ -174,6 +171,9 @@ contract RSCValveFactory is Ownable {
      * @param _platformWallet New native currency wallet which will receive fee.
      */
     function setPlatformWallet(address payable _platformWallet) external onlyOwner {
+        if (_platformWallet == address(0)) {
+            revert NullAddressError();
+        }
         if (_platformWallet != platformWallet) {
             emit PlatformWallet(_platformWallet);
             platformWallet = _platformWallet;

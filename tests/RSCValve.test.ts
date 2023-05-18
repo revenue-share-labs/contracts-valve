@@ -189,7 +189,7 @@ describe("RSCValve", function () {
     );
     expect(await rscValve.numberOfRecipients()).to.be.equal(4);
 
-    await rscValve.setController(ethers.constants.AddressZero);
+    await rscValve.setController(alice.address);
 
     await expect(
       rscValve.setRecipients([
@@ -200,29 +200,40 @@ describe("RSCValve", function () {
     ).to.be.revertedWithCustomError(rscValve, "OnlyControllerError");
   });
 
-  // it("InconsistentDataLengthError()", async () => {
-  //   await expect(
-  //     rscValve.setRecipients(
-  //       [alice.address, addr3.address],
-  //       [2000000, 5000000, 3000000]
-  //     )
-  //   ).to.be.revertedWithCustomError(rscValve, "InconsistentDataLengthError");
-
-  //   await expect(
-  //     rscValve.setRecipients(
-  //       [alice.address, addr3.address, addr4.address],
-  //       [2000000, 5000000]
-  //     )
-  //   ).to.be.revertedWithCustomError(rscValve, "InconsistentDataLengthError");
-  // });
-
-  it("NullAddressRecipientError()", async () => {
+  it("NullAddressError()", async () => {
     await expect(
       rscValve.setRecipients([
         { addrs: alice.address, percentage: 5000000 },
         { addrs: ethers.constants.AddressZero, percentage: 5000000 },
       ])
-    ).to.be.revertedWithCustomError(rscValve, "NullAddressRecipientError");
+    ).to.be.revertedWithCustomError(rscValve, "NullAddressError");
+
+    await expect(
+      rscValveFactory.createRSCValve({
+        controller: owner.address,
+        distributors: [ethers.constants.AddressZero],
+        isImmutableRecipients: true,
+        isAutoNativeCurrencyDistribution: false,
+        minAutoDistributeAmount: ethers.utils.parseEther("1"),
+        recipients: [
+          { addrs: alice.address, percentage: 5000000 },
+          { addrs: bob.address, percentage: 5000000 },
+        ],
+        creationId: ethers.constants.HashZero,
+      })
+    ).to.be.revertedWithCustomError(rscValve, "NullAddressError");
+
+    await expect(
+      rscValve.setController(ethers.constants.AddressZero)
+    ).to.be.revertedWithCustomError(rscValve, "NullAddressError");
+
+    await expect(
+      rscValve.setDistributor(ethers.constants.AddressZero, true)
+    ).to.be.revertedWithCustomError(rscValve, "NullAddressError");
+
+    await expect(
+      rscValve.redistributeToken(ethers.constants.AddressZero)
+    ).to.be.revertedWithCustomError(rscValve, "NullAddressError");
   });
 
   it("RecipientAlreadyAddedError()", async () => {
