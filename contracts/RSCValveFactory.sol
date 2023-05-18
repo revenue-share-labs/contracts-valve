@@ -72,47 +72,6 @@ contract RSCValveFactory is Ownable {
     }
 
     /**
-     * @dev Internal function for getting semi-random salt for deterministicClone creation.
-     * @param _data RSC Create data used for hashing and getting random salt.
-     * @param _deployer Wallet address that want to create new RSC contract.
-     */
-    function _getSalt(
-        RSCValveCreateData memory _data,
-        address _deployer
-    ) internal pure returns (bytes32) {
-        bytes32 hash = keccak256(
-            abi.encode(
-                _data.controller,
-                _data.distributors,
-                _data.isImmutableRecipients,
-                _data.isAutoNativeCurrencyDistribution,
-                _data.minAutoDistributeAmount,
-                _data.recipients,
-                _data.creationId,
-                _deployer
-            )
-        );
-        return hash;
-    }
-
-    /**
-     * @dev External function for creating clone proxy pointing to RSC Percentage.
-     * @param _data RSC Create data used for hashing and getting random salt.
-     * @param _deployer Wallet address that want to create new RSC contract.
-     */
-    function predictDeterministicAddress(
-        RSCValveCreateData memory _data,
-        address _deployer
-    ) external view returns (RSCValve) {
-        bytes32 salt = _getSalt(_data, _deployer);
-        address predictedAddress = Clones.predictDeterministicAddress(
-            address(contractImplementation),
-            salt
-        );
-        return RSCValve(payable(predictedAddress));
-    }
-
-    /**
      * @dev Public function for creating clone proxy pointing to RSC Percentage.
      * @param _data Initial data for creating new RSC Valve contract.
      */
@@ -178,5 +137,46 @@ contract RSCValveFactory is Ownable {
             emit PlatformWallet(_platformWallet);
             platformWallet = _platformWallet;
         }
+    }
+
+    /**
+     * @dev External function for creating clone proxy pointing to RSC Percentage.
+     * @param _data RSC Create data used for hashing and getting random salt.
+     * @param _deployer Wallet address that want to create new RSC contract.
+     */
+    function predictDeterministicAddress(
+        RSCValveCreateData memory _data,
+        address _deployer
+    ) external view returns (RSCValve) {
+        bytes32 salt = _getSalt(_data, _deployer);
+        address predictedAddress = Clones.predictDeterministicAddress(
+            address(contractImplementation),
+            salt
+        );
+        return RSCValve(payable(predictedAddress));
+    }
+
+    /**
+     * @dev Internal function for getting semi-random salt for deterministicClone creation.
+     * @param _data RSC Create data used for hashing and getting random salt.
+     * @param _deployer Wallet address that want to create new RSC contract.
+     */
+    function _getSalt(
+        RSCValveCreateData memory _data,
+        address _deployer
+    ) internal pure returns (bytes32) {
+        bytes32 hash = keccak256(
+            abi.encode(
+                _data.controller,
+                _data.distributors,
+                _data.isImmutableRecipients,
+                _data.isAutoNativeCurrencyDistribution,
+                _data.minAutoDistributeAmount,
+                _data.recipients,
+                _data.creationId,
+                _deployer
+            )
+        );
+        return hash;
     }
 }
