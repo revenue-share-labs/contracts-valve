@@ -19,12 +19,12 @@ error OnlyControllerError();
 error TransferFailedError();
 
 /// Throw when submitted recipient with address(0)
-error NullAddressRecipientError();
+error NullAddressError();
 
 /// Throw if recipient is already in contract
 error RecipientAlreadyAddedError();
 
-/// Throw when sum of percentage is not 100%
+/// Throw when percentage is not 100%
 error InvalidPercentageError(uint256);
 
 /// Throw when change is triggered for immutable recipients
@@ -146,8 +146,12 @@ contract RSCValve is OwnableUpgradeable {
     ) external initializer {
         uint256 distributorsLength = _distributors.length;
         for (uint256 i = 0; i < distributorsLength; ) {
-            emit Distributor(_distributors[i], true);
-            distributors[_distributors[i]] = true;
+            address distributor = _distributors[i];
+            if (distributor == address(0)) {
+                revert NullAddressError();
+            }
+            emit Distributor(distributor, true);
+            distributors[distributor] = true;
             unchecked {
                 i++;
             }
@@ -245,7 +249,7 @@ contract RSCValve is OwnableUpgradeable {
      */
     function _addRecipient(address payable _recipient, uint256 _percentage) internal {
         if (_recipient == address(0)) {
-            revert NullAddressRecipientError();
+            revert NullAddressError();
         }
         if (recipientsPercentage[_recipient] != 0) {
             revert RecipientAlreadyAddedError();
@@ -327,6 +331,10 @@ contract RSCValve is OwnableUpgradeable {
      * @param _token Address of the ERC20 token to be distribute.
      */
     function redistributeToken(IERC20 _token) external onlyDistributor {
+        if (address(_token) == address(0)) {
+            revert NullAddressError();
+        }
+
         uint256 contractBalance = _token.balanceOf(address(this));
         uint256 fee = (contractBalance * platformFee) / BASIS_POINT;
         if (fee > 0) {
@@ -361,6 +369,9 @@ contract RSCValve is OwnableUpgradeable {
         address _distributor,
         bool _isDistributor
     ) external onlyOwner {
+        if (_distributor == address(0)) {
+            revert NullAddressError();
+        }
         bool isDistributor = distributors[_distributor];
         if (isDistributor != _isDistributor) {
             emit Distributor(_distributor, _isDistributor);
@@ -373,6 +384,9 @@ contract RSCValve is OwnableUpgradeable {
      * @param _controller Address of new controller.
      */
     function setController(address _controller) external onlyOwner {
+        if (_controller == address(0)) {
+            revert NullAddressError();
+        }
         if (controller != _controller) {
             emit Controller(_controller);
             controller = _controller;

@@ -107,6 +107,12 @@ describe("RSCValveFactory", () => {
     });
   });
 
+  it("setPlatformWallet()", async () => {
+    await expect(
+      rscValveFactory.setPlatformWallet(ethers.constants.AddressZero)
+    ).to.be.revertedWithCustomError(rscValveFactory, "NullAddressError");
+  });
+
   it("setPlatformFee()", async () => {
     await expect(
       rscValveFactory.connect(alice).setPlatformFee(2500000)
@@ -116,13 +122,13 @@ describe("RSCValveFactory", () => {
     expect(await rscValveFactory.platformFee()).to.be.equal(2500000);
     await expect(
       rscValveFactory.setPlatformFee(5100000)
-    ).to.be.revertedWithCustomError(rscValveFactory, "InvalidFeePercentage");
+    ).to.be.revertedWithCustomError(rscValveFactory, "InvalidPercentageError");
 
     expect(await rscValveFactory.platformFee()).to.be.equal(2500000);
 
     await expect(
       rscValveFactory.setPlatformFee(2500000)
-    ).to.be.revertedWithCustomError(rscValveFactory, "InvalidFeePercentage");
+    ).to.be.revertedWithCustomError(rscValveFactory, "InvalidPercentageError");
     expect(await rscValveFactory.platformFee()).to.be.equal(2500000);
   });
 });

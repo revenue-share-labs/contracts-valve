@@ -54,14 +54,23 @@ Emitted when a platform wallet is set.
 
 ## Errors info
 
-### InvalidFeePercentage error
+### InvalidPercentageError error
 
 ```solidity
-error InvalidFeePercentage(uint256);
+error InvalidPercentageError(uint256);
 ```
 
 
-Throw when Fee Percentage is more than 100%.
+Throw when percentage is not 100%
+
+### NullAddressError error
+
+```solidity
+error NullAddressError();
+```
+
+
+Throw when submitted recipient with address(0)
 
 ## Functions info
 
