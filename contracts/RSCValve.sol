@@ -107,7 +107,7 @@ contract RSCValve is OwnableUpgradeable {
      * @dev Checks whether sender is distributor.
      */
     modifier onlyDistributor() {
-        if (distributors[msg.sender] == false) {
+        if (!distributors[msg.sender]) {
             revert OnlyDistributorError();
         }
         _;
@@ -121,6 +121,20 @@ contract RSCValve is OwnableUpgradeable {
             revert OnlyControllerError();
         }
         _;
+    }
+
+    receive() external payable {
+        // Check whether automatic native currency distribution is enabled
+        // and that contractBalance is more than automatic distribution threshold
+        // and that amount of recipients is less than AUTO_DISTRIBUTION_MAX_RECIPIENTS
+        uint256 contractBalance = address(this).balance;
+        if (
+            isAutoNativeCurrencyDistribution &&
+            contractBalance >= minAutoDistributionAmount &&
+            recipients.length <= AUTO_DISTRIBUTION_MAX_RECIPIENTS
+        ) {
+            _redistributeNativeCurrency(contractBalance);
+        }
     }
 
     /**
@@ -176,135 +190,11 @@ contract RSCValve is OwnableUpgradeable {
         _transferOwnership(_owner);
     }
 
-    receive() external payable {
-        // Check whether automatic native currency distribution is enabled
-        // and that contractBalance is more than automatic distribution threshold
-        // and that amount of recipients is less than AUTO_DISTRIBUTION_MAX_RECIPIENTS
-        uint256 contractBalance = address(this).balance;
-        if (
-            isAutoNativeCurrencyDistribution &&
-            contractBalance >= minAutoDistributionAmount &&
-            recipients.length <= AUTO_DISTRIBUTION_MAX_RECIPIENTS
-        ) {
-            _redistributeNativeCurrency(contractBalance);
-        }
-    }
-
-    /**
-     * @notice External function to return number of recipients.
-     */
-    function numberOfRecipients() external view returns (uint256) {
-        return recipients.length;
-    }
-
-    /**
-     * @notice Internal function to redistribute native currency.
-     * @param _valueToDistribute Native currency amount to be distributed.
-     */
-    function _redistributeNativeCurrency(uint256 _valueToDistribute) internal {
-        uint256 fee = (_valueToDistribute * platformFee) / BASIS_POINT;
-
-        if (_valueToDistribute + fee < BASIS_POINT) {
-            revert TooLowValueToRedistribute();
-        }
-
-        if (fee > 0) {
-            address payable platformWallet = factory.platformWallet();
-            if (platformWallet != address(0)) {
-                _valueToDistribute -= fee;
-                (bool success, ) = platformWallet.call{ value: fee }("");
-                if (!success) {
-                    revert TransferFailedError();
-                }
-            }
-        }
-
-        uint256 recipientsLength = recipients.length;
-        for (uint256 i = 0; i < recipientsLength; ) {
-            address payable recipient = recipients[i];
-            uint256 percentage = recipientsPercentage[recipient];
-            uint256 amountToReceive = (_valueToDistribute * percentage) / BASIS_POINT;
-            (bool success, ) = payable(recipient).call{ value: amountToReceive }("");
-            if (!success) {
-                revert TransferFailedError();
-            }
-            _recursiveNativeCurrencyDistribution(recipient);
-            unchecked {
-                i++;
-            }
-        }
-    }
-
     /**
      * @notice External function to redistribute native currency.
      */
     function redistributeNativeCurrency() external onlyDistributor {
         _redistributeNativeCurrency(address(this).balance);
-    }
-
-    /**
-     * @notice Internal function for adding recipient to revenue share.
-     * @param _recipient Recipient address.
-     * @param _percentage Recipient percentage.
-     */
-    function _addRecipient(address payable _recipient, uint256 _percentage) internal {
-        if (_recipient == address(0)) {
-            revert NullAddressError();
-        }
-        if (recipientsPercentage[_recipient] != 0) {
-            revert RecipientAlreadyAddedError();
-        }
-        recipients.push(_recipient);
-        recipientsPercentage[_recipient] = _percentage;
-    }
-
-    /**
-     * @notice Internal function for removing all recipients.
-     */
-    function _removeAll() internal {
-        uint256 recipientsLength = recipients.length;
-
-        if (recipientsLength == 0) {
-            return;
-        }
-
-        for (uint256 i = 0; i < recipientsLength; ) {
-            address recipient = recipients[i];
-            recipientsPercentage[recipient] = 0;
-            unchecked {
-                i++;
-            }
-        }
-        delete recipients;
-    }
-
-    /**
-     * @notice Internal function for setting recipients.
-     * @param _recipients Array of `RecipientData` structs with recipient address and percentage.
-     */
-    function _setRecipients(RecipientData[] calldata _recipients) internal {
-        if (isImmutableRecipients) {
-            revert ImmutableRecipientsError();
-        }
-
-        _removeAll();
-
-        uint256 percentageSum;
-        uint256 newRecipientsLength = _recipients.length;
-        for (uint256 i = 0; i < newRecipientsLength; ) {
-            uint256 percentage = _recipients[i].percentage;
-            _addRecipient(_recipients[i].addrs, percentage);
-            percentageSum += percentage;
-            unchecked {
-                i++;
-            }
-        }
-
-        if (percentageSum != BASIS_POINT) {
-            revert InvalidPercentageError(percentageSum);
-        }
-
-        emit SetRecipients(_recipients);
     }
 
     /**
@@ -394,6 +284,178 @@ contract RSCValve is OwnableUpgradeable {
     }
 
     /**
+     * @notice External function for setting immutable recipients to true.
+     */
+    function setImmutableRecipients() external onlyOwner {
+        if (isImmutableRecipients) {
+            revert ImmutableRecipientsError();
+        }
+
+        _setImmutableRecipients();
+    }
+
+    /**
+     * @notice External function for setting auto native currency distribution.
+     * @param _isAutoNativeCurrencyDistribution Bool switching whether auto native currency distribution is enabled.
+     */
+    function setAutoNativeCurrencyDistribution(
+        bool _isAutoNativeCurrencyDistribution
+    ) external onlyOwner {
+        if (isAutoNativeCurrencyDistribution != _isAutoNativeCurrencyDistribution) {
+            emit AutoNativeCurrencyDistribution(_isAutoNativeCurrencyDistribution);
+            isAutoNativeCurrencyDistribution = _isAutoNativeCurrencyDistribution;
+        }
+    }
+
+    /**
+     * @notice External function for setting minimun auto distribution amount.
+     * @param _minAutoDistributionAmount New minimum distribution amount.
+     */
+    function setMinAutoDistributionAmount(
+        uint256 _minAutoDistributionAmount
+    ) external onlyOwner {
+        if (_minAutoDistributionAmount < BASIS_POINT) {
+            revert TooLowValueToRedistribute();
+        }
+        if (minAutoDistributionAmount != _minAutoDistributionAmount) {
+            emit MinAutoDistributionAmount(_minAutoDistributionAmount);
+            minAutoDistributionAmount = _minAutoDistributionAmount;
+        }
+    }
+
+    /**
+     * @notice External function to return number of recipients.
+     */
+    function numberOfRecipients() external view returns (uint256) {
+        return recipients.length;
+    }
+
+    /**
+     * @dev Leaves the contract without owner. It will not be possible to call
+     * `onlyOwner` functions anymore. Can only be called by the current owner.
+     *
+     * NOTE: Renouncing ownership is forbidden for RSC contract.
+     */
+    function renounceOwnership() public view override onlyOwner {
+        revert RenounceOwnershipForbidden();
+    }
+
+    /**
+     * @notice Internal function for adding recipient to revenue share.
+     * @param _recipient Recipient address.
+     * @param _percentage Recipient percentage.
+     */
+    function _addRecipient(address payable _recipient, uint256 _percentage) internal {
+        if (_recipient == address(0)) {
+            revert NullAddressError();
+        }
+        if (recipientsPercentage[_recipient] != 0) {
+            revert RecipientAlreadyAddedError();
+        }
+        recipients.push(_recipient);
+        recipientsPercentage[_recipient] = _percentage;
+    }
+
+    /**
+     * @notice Internal function for removing all recipients.
+     */
+    function _removeAll() internal {
+        uint256 recipientsLength = recipients.length;
+
+        if (recipientsLength == 0) {
+            return;
+        }
+
+        for (uint256 i = 0; i < recipientsLength; ) {
+            address recipient = recipients[i];
+            recipientsPercentage[recipient] = 0;
+            unchecked {
+                i++;
+            }
+        }
+        delete recipients;
+    }
+
+    /**
+     * @notice Internal function for setting recipients.
+     * @param _recipients Array of `RecipientData` structs with recipient address and percentage.
+     */
+    function _setRecipients(RecipientData[] calldata _recipients) internal {
+        if (isImmutableRecipients) {
+            revert ImmutableRecipientsError();
+        }
+
+        _removeAll();
+
+        uint256 percentageSum;
+        uint256 newRecipientsLength = _recipients.length;
+        for (uint256 i = 0; i < newRecipientsLength; ) {
+            uint256 percentage = _recipients[i].percentage;
+            _addRecipient(_recipients[i].addrs, percentage);
+            percentageSum += percentage;
+            unchecked {
+                i++;
+            }
+        }
+
+        if (percentageSum != BASIS_POINT) {
+            revert InvalidPercentageError(percentageSum);
+        }
+
+        emit SetRecipients(_recipients);
+    }
+
+    /**
+     * @notice Internal function for setting immutable recipients to true.
+     * @dev Can only be called from controller or contract owner via
+     * `setImmutableRecipients()` or `setRecipientsExt()`
+     */
+    function _setImmutableRecipients() internal {
+        if (!isImmutableRecipients) {
+            emit ImmutableRecipients(true);
+            isImmutableRecipients = true;
+        }
+    }
+
+    /**
+     * @notice Internal function to redistribute native currency.
+     * @param _valueToDistribute Native currency amount to be distributed.
+     */
+    function _redistributeNativeCurrency(uint256 _valueToDistribute) internal {
+        uint256 fee = (_valueToDistribute * platformFee) / BASIS_POINT;
+
+        if (_valueToDistribute + fee < BASIS_POINT) {
+            revert TooLowValueToRedistribute();
+        }
+
+        if (fee > 0) {
+            address payable platformWallet = factory.platformWallet();
+            if (platformWallet != address(0)) {
+                _valueToDistribute -= fee;
+                (bool success, ) = platformWallet.call{ value: fee }("");
+                if (!success) {
+                    revert TransferFailedError();
+                }
+            }
+        }
+
+        uint256 recipientsLength = recipients.length;
+        for (uint256 i = 0; i < recipientsLength; ) {
+            address payable recipient = recipients[i];
+            uint256 percentage = recipientsPercentage[recipient];
+            uint256 amountToReceive = (_valueToDistribute * percentage) / BASIS_POINT;
+            (bool success, ) = payable(recipient).call{ value: amountToReceive }("");
+            if (!success) {
+                revert TransferFailedError();
+            }
+            _recursiveNativeCurrencyDistribution(recipient);
+            unchecked {
+                i++;
+            }
+        }
+    }
+
+    /**
      * @notice Internal function to check whether recipient should be recursively distributed.
      * @param _recipient Address of recipient to recursively distribute.
      * @param _token Token to be distributed.
@@ -436,7 +498,7 @@ contract RSCValve is OwnableUpgradeable {
             try recursiveRecipient.isAutoNativeCurrencyDistribution() returns (
                 bool childAutoNativeCurrencyDistribution
             ) {
-                if (childAutoNativeCurrencyDistribution == true) {
+                if (childAutoNativeCurrencyDistribution) {
                     return;
                 }
             } catch {
@@ -454,67 +516,5 @@ contract RSCValve is OwnableUpgradeable {
                 return;
             } // unable to recursively distribute
         }
-    }
-
-    /**
-     * @notice Internal function for setting immutable recipients to true.
-     * @dev Can only be called from controller or contract owner via
-     * `setImmutableRecipients()` or `setRecipientsExt()`
-     */
-    function _setImmutableRecipients() internal {
-        if (!isImmutableRecipients) {
-            emit ImmutableRecipients(true);
-            isImmutableRecipients = true;
-        }
-    }
-
-    /**
-     * @notice External function for setting immutable recipients to true.
-     */
-    function setImmutableRecipients() external onlyOwner {
-        if (isImmutableRecipients) {
-            revert ImmutableRecipientsError();
-        }
-
-        _setImmutableRecipients();
-    }
-
-    /**
-     * @notice External function for setting auto native currency distribution.
-     * @param _isAutoNativeCurrencyDistribution Bool switching whether auto native currency distribution is enabled.
-     */
-    function setAutoNativeCurrencyDistribution(
-        bool _isAutoNativeCurrencyDistribution
-    ) external onlyOwner {
-        if (isAutoNativeCurrencyDistribution != _isAutoNativeCurrencyDistribution) {
-            emit AutoNativeCurrencyDistribution(_isAutoNativeCurrencyDistribution);
-            isAutoNativeCurrencyDistribution = _isAutoNativeCurrencyDistribution;
-        }
-    }
-
-    /**
-     * @notice External function for setting minimun auto distribution amount.
-     * @param _minAutoDistributionAmount New minimum distribution amount.
-     */
-    function setMinAutoDistributionAmount(
-        uint256 _minAutoDistributionAmount
-    ) external onlyOwner {
-        if (_minAutoDistributionAmount < BASIS_POINT) {
-            revert TooLowValueToRedistribute();
-        }
-        if (minAutoDistributionAmount != _minAutoDistributionAmount) {
-            emit MinAutoDistributionAmount(_minAutoDistributionAmount);
-            minAutoDistributionAmount = _minAutoDistributionAmount;
-        }
-    }
-
-    /**
-     * @dev Leaves the contract without owner. It will not be possible to call
-     * `onlyOwner` functions anymore. Can only be called by the current owner.
-     *
-     * NOTE: Renouncing ownership is forbidden for RSC contract.
-     */
-    function renounceOwnership() public view override onlyOwner {
-        revert RenounceOwnershipForbidden();
     }
 }
