@@ -17,11 +17,11 @@ event NewRSCValve(
 	address contractAddress,
 	address controller,
 	address[] distributors,
-	bytes32 version,
+	bytes32 indexed version,
 	bool isImmutableRecipients,
 	bool isAutoNativeCurrencyDistribution,
 	uint256 minAutoDistributeAmount,
-	bytes32 creationId
+	bytes32 indexed creationId
 );
 ```
 
