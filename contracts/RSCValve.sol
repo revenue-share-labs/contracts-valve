@@ -107,7 +107,7 @@ contract RSCValve is OwnableUpgradeable {
      * @dev Checks whether sender is distributor.
      */
     modifier onlyDistributor() {
-        if (distributors[msg.sender] == false) {
+        if (!distributors[msg.sender]) {
             revert OnlyDistributorError();
         }
         _;
@@ -498,7 +498,7 @@ contract RSCValve is OwnableUpgradeable {
             try recursiveRecipient.isAutoNativeCurrencyDistribution() returns (
                 bool childAutoNativeCurrencyDistribution
             ) {
-                if (childAutoNativeCurrencyDistribution == true) {
+                if (childAutoNativeCurrencyDistribution) {
                     return;
                 }
             } catch {
