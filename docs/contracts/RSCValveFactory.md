@@ -28,12 +28,6 @@ event NewRSCValve(
 
 Emitted when a new RSCValve is deployed.
 
-### OwnershipTransferred event
-
-```solidity
-event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
-```
-
 ### PlatformFee event
 
 ```solidity
@@ -51,6 +45,37 @@ event PlatformWallet(address newPlatformWallet);
 
 
 Emitted when a platform wallet is set.
+
+### RoleAdminChanged event
+
+```solidity
+event RoleAdminChanged(
+	bytes32 indexed role,
+	bytes32 indexed previousAdminRole,
+	bytes32 indexed newAdminRole
+);
+```
+
+
+Emitted when `newAdminRole` is set as ``role``'s admin role, replacing `previousAdminRole` `DEFAULT_ADMIN_ROLE` is the starting admin for all roles, despite {RoleAdminChanged} not being emitted signaling this. _Available since v3.1._
+
+### RoleGranted event
+
+```solidity
+event RoleGranted(bytes32 indexed role, address indexed account, address indexed sender);
+```
+
+
+Emitted when `account` is granted `role`. `sender` is the account that originated the contract call, an admin role bearer except when using {AccessControl-_setupRole}.
+
+### RoleRevoked event
+
+```solidity
+event RoleRevoked(bytes32 indexed role, address indexed account, address indexed sender);
+```
+
+
+Emitted when `account` is revoked `role`. `sender` is the account that originated the contract call:   - if using `revokeRole`, it is the admin role bearer   - if using `renounceRole`, it is the role bearer (i.e. `account`)
 
 ## Errors info
 
@@ -82,6 +107,12 @@ function BASIS_POINT() external view returns (uint256);
 
 
 Measurement unit 10000000 = 100%.
+
+### DEFAULT_ADMIN_ROLE (0xa217fddf)
+
+```solidity
+function DEFAULT_ADMIN_ROLE() external view returns (bytes32);
+```
 
 ### FEE_BOUND (0x29e4f362)
 
@@ -126,14 +157,32 @@ Parameters:
 | :---- | :---- | :------------------------------------------------ |
 | _data | tuple | Initial data for creating new RSC Valve contract. |
 
-### owner (0x8da5cb5b)
+### getRoleAdmin (0x248a9ca3)
 
 ```solidity
-function owner() external view returns (address);
+function getRoleAdmin(bytes32 role) external view returns (bytes32);
 ```
 
 
-Returns the address of the current owner.
+Returns the admin role that controls `role`. See {grantRole} and {revokeRole}. To change a role's admin, use {_setRoleAdmin}.
+
+### grantRole (0x2f2ff15d)
+
+```solidity
+function grantRole(bytes32 role, address account) external;
+```
+
+
+Grants `role` to `account`. If `account` had not been already granted `role`, emits a {RoleGranted} event. Requirements: - the caller must have ``role``'s admin role. May emit a {RoleGranted} event.
+
+### hasRole (0x91d14854)
+
+```solidity
+function hasRole(bytes32 role, address account) external view returns (bool);
+```
+
+
+Returns `true` if `account` has been granted `role`.
 
 ### platformFee (0x26232a2e)
 
@@ -173,14 +222,23 @@ Parameters:
 | _data     | tuple   | RSC Create data used for hashing and getting random salt. |
 | _deployer | address | Wallet address that want to create new RSC contract.      |
 
-### renounceOwnership (0x715018a6)
+### renounceRole (0x36568abe)
 
 ```solidity
-function renounceOwnership() external;
+function renounceRole(bytes32 role, address account) external;
 ```
 
 
-Leaves the contract without owner. It will not be possible to call `onlyOwner` functions anymore. Can only be called by the current owner. NOTE: Renouncing ownership will leave the contract without an owner, thereby removing any functionality that is only available to the owner.
+Revokes `role` from the calling account. Roles are often managed via {grantRole} and {revokeRole}: this function's purpose is to provide a mechanism for accounts to lose their privileges if they are compromised (such as when a trusted device is misplaced). If the calling account had been revoked `role`, emits a {RoleRevoked} event. Requirements: - the caller must be `account`. May emit a {RoleRevoked} event.
+
+### revokeRole (0xd547741f)
+
+```solidity
+function revokeRole(bytes32 role, address account) external;
+```
+
+
+Revokes `role` from `account`. If `account` had been granted `role`, emits a {RoleRevoked} event. Requirements: - the caller must have ``role``'s admin role. May emit a {RoleRevoked} event.
 
 ### setPlatformFee (0x12e8e2c3)
 
@@ -189,7 +247,7 @@ function setPlatformFee(uint256 _fee) external;
 ```
 
 
-Only Owner function for setting platform fee.
+Admin function for setting platform fee.
 
 
 Parameters:
@@ -205,7 +263,7 @@ function setPlatformWallet(address _platformWallet) external;
 ```
 
 
-Owner function for setting platform fee.
+Admin function for setting platform fee.
 
 
 Parameters:
@@ -214,11 +272,11 @@ Parameters:
 | :-------------- | :------ | :------------------------------------------------- |
 | _platformWallet | address | New native currency wallet which will receive fee. |
 
-### transferOwnership (0xf2fde38b)
+### supportsInterface (0x01ffc9a7)
 
 ```solidity
-function transferOwnership(address newOwner) external;
+function supportsInterface(bytes4 interfaceId) external view returns (bool);
 ```
 
 
-Transfers ownership of the contract to a new account (`newOwner`). Can only be called by the current owner.
+See {IERC165-supportsInterface}.
