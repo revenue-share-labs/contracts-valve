@@ -5,15 +5,9 @@ pragma solidity 0.8.20;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/access/AccessControlEnumerableUpgradeable.sol";
 import "./interfaces/IFeeFactory.sol";
 import "./interfaces/IRecursiveRSC.sol";
-
-/// Throw when if sender is not distributor
-error OnlyDistributorError();
-
-/// Throw when sender is not controller
-error OnlyControllerError();
 
 /// Throw when transaction fails
 error TransferFailedError();
@@ -30,9 +24,6 @@ error InvalidPercentageError(uint256);
 /// Throw when change is triggered for immutable recipients
 error ImmutableRecipientsError();
 
-/// Throw when renounce ownership is called
-error RenounceOwnershipForbidden();
-
 /// Throw when amount to distribute is less than BASIS_POINT
 error TooLowValueToRedistribute();
 
@@ -40,7 +31,7 @@ error TooLowValueToRedistribute();
 /// @notice The main function of RSCValve is to redistribute tokens
 /// (whether they are ERC-20 or native cryptocurrency), to the participants
 /// based on the percentages assigned to them.
-contract RSCValve is OwnableUpgradeable {
+contract RSCValve is AccessControlEnumerableUpgradeable {
     using SafeERC20 for IERC20;
 
     /// Measurement unit 10000000 = 100%.
@@ -49,11 +40,14 @@ contract RSCValve is OwnableUpgradeable {
     /// Max amount of recipients for auto-distribution.
     uint256 public constant AUTO_DISTRIBUTION_MAX_RECIPIENTS = 35;
 
-    /// distributorAddress => isDistributor
-    mapping(address => bool) public distributors;
+    /// Role identifier for the distributor role
+    bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
 
-    /// Controller address
-    address public controller;
+    /// Role identifier for the distributor role
+    bytes32 public constant DISTRIBUTOR_ROLE = keccak256("DISTRIBUTOR_ROLE");
+
+    /// Role identifier for the controller role
+    bytes32 public constant CONTROLLER_ROLE = keccak256("CONTROLLER_ROLE");
 
     /// If true, `recipients` array cant be updated.
     bool public isImmutableRecipients;
@@ -103,26 +97,6 @@ contract RSCValve is OwnableUpgradeable {
     /// Emitted when recipients set immutable.
     event ImmutableRecipients(bool isImmutableRecipients);
 
-    /**
-     * @dev Checks whether sender is distributor.
-     */
-    modifier onlyDistributor() {
-        if (!distributors[msg.sender]) {
-            revert OnlyDistributorError();
-        }
-        _;
-    }
-
-    /**
-     * @dev Checks whether sender is controller.
-     */
-    modifier onlyController() {
-        if (msg.sender != controller) {
-            revert OnlyControllerError();
-        }
-        _;
-    }
-
     receive() external payable {
         // Check whether automatic native currency distribution is enabled
         // and that contractBalance is more than automatic distribution threshold
@@ -158,6 +132,15 @@ contract RSCValve is OwnableUpgradeable {
         uint256 _platformFee,
         RecipientData[] calldata _recipients
     ) external initializer {
+        __AccessControlEnumerable_init();
+        _setRoleAdmin(ADMIN_ROLE, ADMIN_ROLE);
+        _setRoleAdmin(CONTROLLER_ROLE, ADMIN_ROLE);
+        _setRoleAdmin(DISTRIBUTOR_ROLE, ADMIN_ROLE);
+        _setupRole(ADMIN_ROLE, _owner);
+
+        emit Controller(_controller);
+        _setupRole(CONTROLLER_ROLE, _controller);
+
         uint256 distributorsLength = _distributors.length;
         for (uint256 i = 0; i < distributorsLength; ) {
             address distributor = _distributors[i];
@@ -165,14 +148,11 @@ contract RSCValve is OwnableUpgradeable {
                 revert NullAddressError();
             }
             emit Distributor(distributor, true);
-            distributors[distributor] = true;
+            _setupRole(DISTRIBUTOR_ROLE, distributor);
             unchecked {
                 i++;
             }
         }
-
-        emit Controller(_controller);
-        controller = _controller;
 
         emit AutoNativeCurrencyDistribution(_isAutoNativeCurrencyDistribution);
         isAutoNativeCurrencyDistribution = _isAutoNativeCurrencyDistribution;
@@ -186,14 +166,12 @@ contract RSCValve is OwnableUpgradeable {
         _setRecipients(_recipients);
         emit ImmutableRecipients(_isImmutableRecipients);
         isImmutableRecipients = _isImmutableRecipients;
-
-        _transferOwnership(_owner);
     }
 
     /**
      * @notice External function to redistribute native currency.
      */
-    function redistributeNativeCurrency() external onlyDistributor {
+    function redistributeNativeCurrency() external onlyRole(DISTRIBUTOR_ROLE) {
         _redistributeNativeCurrency(address(this).balance);
     }
 
@@ -201,7 +179,9 @@ contract RSCValve is OwnableUpgradeable {
      * @notice External function for setting recipients.
      * @param _recipients Array of `RecipientData` structs with recipient address and percentage.
      */
-    function setRecipients(RecipientData[] calldata _recipients) external onlyController {
+    function setRecipients(
+        RecipientData[] calldata _recipients
+    ) external onlyRole(CONTROLLER_ROLE) {
         _setRecipients(_recipients);
     }
 
@@ -211,7 +191,7 @@ contract RSCValve is OwnableUpgradeable {
      */
     function setRecipientsExt(
         RecipientData[] calldata _recipients
-    ) external onlyController {
+    ) external onlyRole(CONTROLLER_ROLE) {
         _setRecipients(_recipients);
         _setImmutableRecipients();
     }
@@ -220,7 +200,7 @@ contract RSCValve is OwnableUpgradeable {
      * @notice External function to redistribute ERC20 token based on percentages assign to the recipients.
      * @param _token Address of the ERC20 token to be distribute.
      */
-    function redistributeToken(IERC20 _token) external onlyDistributor {
+    function redistributeToken(IERC20 _token) external onlyRole(DISTRIBUTOR_ROLE) {
         if (address(_token) == address(0)) {
             revert NullAddressError();
         }
@@ -251,42 +231,9 @@ contract RSCValve is OwnableUpgradeable {
     }
 
     /**
-     * @notice External function to set distributor address.
-     * @param _distributor Address of new distributor.
-     * @param _isDistributor Bool indicating whether address is / isn't distributor.
-     */
-    function setDistributor(
-        address _distributor,
-        bool _isDistributor
-    ) external onlyOwner {
-        if (_distributor == address(0)) {
-            revert NullAddressError();
-        }
-        bool isDistributor = distributors[_distributor];
-        if (isDistributor != _isDistributor) {
-            emit Distributor(_distributor, _isDistributor);
-            distributors[_distributor] = _isDistributor;
-        }
-    }
-
-    /**
-     * @notice External function to set controller address.
-     * @param _controller Address of new controller.
-     */
-    function setController(address _controller) external onlyOwner {
-        if (_controller == address(0)) {
-            revert NullAddressError();
-        }
-        if (controller != _controller) {
-            emit Controller(_controller);
-            controller = _controller;
-        }
-    }
-
-    /**
      * @notice External function for setting immutable recipients to true.
      */
-    function setImmutableRecipients() external onlyOwner {
+    function setImmutableRecipients() external onlyRole(ADMIN_ROLE) {
         if (isImmutableRecipients) {
             revert ImmutableRecipientsError();
         }
@@ -300,7 +247,7 @@ contract RSCValve is OwnableUpgradeable {
      */
     function setAutoNativeCurrencyDistribution(
         bool _isAutoNativeCurrencyDistribution
-    ) external onlyOwner {
+    ) external onlyRole(ADMIN_ROLE) {
         if (isAutoNativeCurrencyDistribution != _isAutoNativeCurrencyDistribution) {
             emit AutoNativeCurrencyDistribution(_isAutoNativeCurrencyDistribution);
             isAutoNativeCurrencyDistribution = _isAutoNativeCurrencyDistribution;
@@ -313,7 +260,7 @@ contract RSCValve is OwnableUpgradeable {
      */
     function setMinAutoDistributionAmount(
         uint256 _minAutoDistributionAmount
-    ) external onlyOwner {
+    ) external onlyRole(ADMIN_ROLE) {
         if (_minAutoDistributionAmount < BASIS_POINT) {
             revert TooLowValueToRedistribute();
         }
@@ -328,16 +275,6 @@ contract RSCValve is OwnableUpgradeable {
      */
     function numberOfRecipients() external view returns (uint256) {
         return recipients.length;
-    }
-
-    /**
-     * @dev Leaves the contract without owner. It will not be possible to call
-     * `onlyOwner` functions anymore. Can only be called by the current owner.
-     *
-     * NOTE: Renouncing ownership is forbidden for RSC contract.
-     */
-    function renounceOwnership() public view override onlyOwner {
-        revert RenounceOwnershipForbidden();
     }
 
     /**
@@ -407,7 +344,7 @@ contract RSCValve is OwnableUpgradeable {
 
     /**
      * @notice Internal function for setting immutable recipients to true.
-     * @dev Can only be called from controller or contract owner via
+     * @dev Can only be called from controller or contract admin via
      * `setImmutableRecipients()` or `setRecipientsExt()`
      */
     function _setImmutableRecipients() internal {
@@ -469,7 +406,7 @@ contract RSCValve is OwnableUpgradeable {
         if (recipientSize > 0) {
             IRecursiveRSC recursiveRecipient = IRecursiveRSC(_recipient);
             // Validate this contract is distributor in child recipient
-            try recursiveRecipient.distributors(address(this)) returns (
+            try recursiveRecipient.hasRole(DISTRIBUTOR_ROLE, address(this)) returns (
                 bool isBranchDistributor
             ) {
                 if (isBranchDistributor) {
@@ -506,7 +443,7 @@ contract RSCValve is OwnableUpgradeable {
             }
 
             // Validate this contract is distributor in child recipient
-            try recursiveRecipient.distributors(address(this)) returns (
+            try recursiveRecipient.hasRole(DISTRIBUTOR_ROLE, address(this)) returns (
                 bool isBranchDistributor
             ) {
                 if (isBranchDistributor) {

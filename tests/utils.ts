@@ -1,5 +1,13 @@
 import { ethers, network } from "hardhat";
 
+// AccessControl roles in bytes32 string
+const roles = {
+  defaultAdmin: ethers.constants.HashZero, // DEFAULT_ADMIN_ROLE
+  admin: ethers.utils.solidityKeccak256(["string"], ["ADMIN_ROLE"]),
+  distributor: ethers.utils.solidityKeccak256(["string"], ["DISTRIBUTOR_ROLE"]),
+  controller: ethers.utils.solidityKeccak256(["string"], ["CONTROLLER_ROLE"]),
+};
+
 const snapshot = {
   take: async (): Promise<any> => {
     return await network.provider.request({
@@ -23,4 +31,4 @@ const randomSigners = (amount: number) => {
   return signers;
 };
 
-export { snapshot, randomSigners };
+export { snapshot, randomSigners, roles };
