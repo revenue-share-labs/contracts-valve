@@ -11,7 +11,7 @@ import {
   MockReceiver,
   MockReceiver__factory,
 } from "../typechain-types";
-import { snapshot } from "./utils";
+import { snapshot, roles } from "./utils";
 
 describe("RSCValve", function () {
   let rscValveFactory: RSCValveFactory,
@@ -45,7 +45,7 @@ describe("RSCValve", function () {
       creationId,
     });
     const receipt = await tx.wait();
-    const revenueShareContractAddress = receipt.events?.[8].args?.[0];
+    const revenueShareContractAddress = receipt.events?.[13].args?.[0];
     const RevenueShareContract = await ethers.getContractFactory("RSCValve");
     const RSCValve = await RevenueShareContract.attach(
       revenueShareContractAddress
@@ -78,20 +78,28 @@ describe("RSCValve", function () {
   });
 
   it("Should set base attrs correctly", async () => {
-    expect(await rscValve.owner()).to.be.equal(owner.address);
-    expect(await rscValve.distributors(owner.address)).to.be.true;
+    expect(await rscValve.hasRole(roles.admin, owner.address)).to.be.true;
+    expect(await rscValve.hasRole(roles.distributor, owner.address)).to.be.true;
 
     expect(await rscValve.isAutoNativeCurrencyDistribution()).to.be.true;
     await rscValve.setAutoNativeCurrencyDistribution(false);
     expect(await rscValve.isAutoNativeCurrencyDistribution()).to.be.false;
     await expect(
       rscValve.connect(alice).setAutoNativeCurrencyDistribution(false)
-    ).to.be.revertedWith("Ownable: caller is not the owner");
+    ).to.be.revertedWith(
+      `AccessControl: account ${alice.address.toLowerCase()} is missing role ${
+        roles.admin
+      }`
+    );
 
     expect(await rscValve.isImmutableRecipients()).to.be.false;
     await expect(
       rscValve.connect(alice).setImmutableRecipients()
-    ).to.be.revertedWith("Ownable: caller is not the owner");
+    ).to.be.revertedWith(
+      `AccessControl: account ${alice.address.toLowerCase()} is missing role ${
+        roles.admin
+      }`
+    );
     await rscValve.setImmutableRecipients();
     expect(await rscValve.isImmutableRecipients()).to.be.true;
     await expect(
@@ -110,7 +118,11 @@ describe("RSCValve", function () {
       rscValve
         .connect(alice)
         .setMinAutoDistributionAmount(ethers.utils.parseEther("2"))
-    ).to.be.revertedWith("Ownable: caller is not the owner");
+    ).to.be.revertedWith(
+      `AccessControl: account ${alice.address.toLowerCase()} is missing role ${
+        roles.admin
+      }`
+    );
   });
 
   it("Should set recipients correctly", async () => {
@@ -120,7 +132,11 @@ describe("RSCValve", function () {
         { addrs: addr3.address, percentage: 5000000 },
         { addrs: addr4.address, percentage: 3000000 },
       ])
-    ).to.be.revertedWithCustomError(rscValve, "OnlyControllerError");
+    ).to.be.revertedWith(
+      `AccessControl: account ${addr3.address.toLowerCase()} is missing role ${
+        roles.controller
+      }`
+    );
 
     await rscValve.setRecipients([
       { addrs: alice.address, percentage: 2000000 },
@@ -189,15 +205,15 @@ describe("RSCValve", function () {
     );
     expect(await rscValve.numberOfRecipients()).to.be.equal(4);
 
-    await rscValve.setController(alice.address);
+    await rscValve.grantRole(roles.controller, alice.address);
+    await rscValve.grantRole(roles.distributor, alice.address);
+    await rscValve.grantRole(roles.admin, alice.address);
 
-    await expect(
-      rscValve.setRecipients([
-        { addrs: alice.address, percentage: 2000000 },
-        { addrs: addr3.address, percentage: 5000000 },
-        { addrs: addr4.address, percentage: 3000000 },
-      ])
-    ).to.be.revertedWithCustomError(rscValve, "OnlyControllerError");
+    await rscValve.setRecipients([
+      { addrs: alice.address, percentage: 2000000 },
+      { addrs: addr3.address, percentage: 5000000 },
+      { addrs: addr4.address, percentage: 3000000 },
+    ]);
   });
 
   it("NullAddressError()", async () => {
@@ -224,14 +240,6 @@ describe("RSCValve", function () {
     ).to.be.revertedWithCustomError(rscValve, "NullAddressError");
 
     await expect(
-      rscValve.setController(ethers.constants.AddressZero)
-    ).to.be.revertedWithCustomError(rscValve, "NullAddressError");
-
-    await expect(
-      rscValve.setDistributor(ethers.constants.AddressZero, true)
-    ).to.be.revertedWithCustomError(rscValve, "NullAddressError");
-
-    await expect(
       rscValve.redistributeToken(ethers.constants.AddressZero)
     ).to.be.revertedWithCustomError(rscValve, "NullAddressError");
   });
@@ -243,13 +251,6 @@ describe("RSCValve", function () {
         { addrs: alice.address, percentage: 5000000 },
       ])
     ).to.be.revertedWithCustomError(rscValve, "RecipientAlreadyAddedError");
-  });
-
-  it("RenounceOwnershipForbidden()", async () => {
-    await expect(rscValve.renounceOwnership()).to.be.revertedWithCustomError(
-      rscValve,
-      "RenounceOwnershipForbidden"
-    );
   });
 
   it("TransferFailedError()", async () => {
@@ -286,7 +287,7 @@ describe("RSCValve", function () {
       creationId: ethers.constants.HashZero,
     });
     const receipt = await tx.wait();
-    const revenueShareContractAddress = receipt.events?.[8].args?.[0];
+    const revenueShareContractAddress = receipt.events?.[13].args?.[0];
     const RevenueShareContract = await ethers.getContractFactory("RSCValve");
     const rscValveFee = await RevenueShareContract.attach(
       revenueShareContractAddress
@@ -343,7 +344,11 @@ describe("RSCValve", function () {
         { addrs: addr3.address, percentage: 5000000 },
         { addrs: addr4.address, percentage: 3000000 },
       ])
-    ).to.be.revertedWithCustomError(rscValve, "OnlyControllerError");
+    ).to.be.revertedWith(
+      `AccessControl: account ${addr3.address.toLowerCase()} is missing role ${
+        roles.controller
+      }`
+    );
 
     await rscValve.setRecipients([
       { addrs: alice.address, percentage: 2000000 },
@@ -528,13 +533,21 @@ describe("RSCValve", function () {
 
     await expect(
       rscValve.connect(addr3).redistributeToken(testToken.address)
-    ).to.be.revertedWithCustomError(rscValve, "OnlyDistributorError");
+    ).to.be.revertedWith(
+      `AccessControl: account ${addr3.address.toLowerCase()} is missing role ${
+        roles.distributor
+      }`
+    );
 
     await expect(
-      rscValve.connect(addr3).setDistributor(addr3.address, true)
-    ).to.be.revertedWith("Ownable: caller is not the owner");
+      rscValve.connect(addr3).grantRole(roles.distributor, addr3.address)
+    ).to.be.revertedWith(
+      `AccessControl: account ${addr3.address.toLowerCase()} is missing role ${
+        roles.admin
+      }`
+    );
 
-    await rscValve.setDistributor(addr3.address, true);
+    await rscValve.grantRole(roles.distributor, addr3.address);
     await rscValve.connect(addr3).redistributeToken(testToken.address);
 
     expect(await testToken.balanceOf(rscValve.address)).to.be.equal(0);
@@ -543,11 +556,6 @@ describe("RSCValve", function () {
     );
     expect(await testToken.balanceOf(bob.address)).to.be.equal(
       ethers.utils.parseEther("160")
-    );
-
-    await expect(rscValve.renounceOwnership()).to.be.revertedWithCustomError(
-      rscValve,
-      "RenounceOwnershipForbidden"
     );
   });
 
@@ -564,14 +572,6 @@ describe("RSCValve", function () {
         [{ addrs: alice.address, percentage: 10000000 }]
       )
     ).to.be.revertedWith("Initializable: contract is already initialized");
-  });
-
-  it("Should transfer ownership correctly", async () => {
-    await rscValve.transferOwnership(alice.address);
-    expect(await rscValve.owner()).to.be.equal(alice.address);
-    await expect(
-      rscValve.connect(bob).transferOwnership(bob.address)
-    ).to.be.revertedWith("Ownable: caller is not the owner");
   });
 
   it("Should create manual distribution split", async () => {
@@ -604,7 +604,11 @@ describe("RSCValve", function () {
 
     await expect(
       RSCValveManualDistribution.connect(addr3).redistributeNativeCurrency()
-    ).to.be.revertedWithCustomError(rscValve, "OnlyDistributorError");
+    ).to.be.revertedWith(
+      `AccessControl: account ${addr3.address.toLowerCase()} is missing role ${
+        roles.distributor
+      }`
+    );
 
     await RSCValveManualDistribution.redistributeNativeCurrency();
 
@@ -638,7 +642,7 @@ describe("RSCValve", function () {
       creationId: ethers.constants.HashZero,
     });
     const receipt = await txFee.wait();
-    const revenueShareContractAddress = receipt.events?.[8].args?.[0];
+    const revenueShareContractAddress = receipt.events?.[13].args?.[0];
     const RevenueShareContract = await ethers.getContractFactory("RSCValve");
     const rscFeeValve = await RevenueShareContract.attach(
       revenueShareContractAddress
@@ -784,8 +788,8 @@ describe("RSCValve", function () {
       ethers.utils.parseEther("1000000")
     );
 
-    await rscValveSecond.setDistributor(rscValveMain.address, true);
-    await rscValveThird.setDistributor(rscValveSecond.address, true);
+    await rscValveSecond.grantRole(roles.distributor, rscValveMain.address);
+    await rscValveThird.grantRole(roles.distributor, rscValveSecond.address);
     await rscValveMain.redistributeToken(testToken.address);
 
     expect(await testToken.balanceOf(rscValveMain.address)).to.be.equal(0);
@@ -845,8 +849,8 @@ describe("RSCValve", function () {
       value: ethers.utils.parseEther("50"),
     });
 
-    await rscValveSecond.setDistributor(rscValveMain.address, true);
-    await rscValveThird.setDistributor(rscValveSecond.address, true);
+    await rscValveSecond.grantRole(roles.distributor, rscValveMain.address);
+    await rscValveThird.grantRole(roles.distributor, rscValveSecond.address);
     await rscValveMain.redistributeNativeCurrency();
 
     expect(await ethers.provider.getBalance(rscValveMain.address)).to.be.equal(

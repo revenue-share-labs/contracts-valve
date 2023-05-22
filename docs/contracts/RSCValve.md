@@ -73,11 +73,36 @@ event MinAutoDistributionAmount(uint256 newAmount);
 
 Emitted when new `minAutoDistributionAmount` is set.
 
-### OwnershipTransferred event
+### RoleAdminChanged event
 
 ```solidity
-event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
+event RoleAdminChanged(
+	bytes32 indexed role,
+	bytes32 indexed previousAdminRole,
+	bytes32 indexed newAdminRole
+);
 ```
+
+
+Emitted when `newAdminRole` is set as ``role``'s admin role, replacing `previousAdminRole` `DEFAULT_ADMIN_ROLE` is the starting admin for all roles, despite {RoleAdminChanged} not being emitted signaling this. _Available since v3.1._
+
+### RoleGranted event
+
+```solidity
+event RoleGranted(bytes32 indexed role, address indexed account, address indexed sender);
+```
+
+
+Emitted when `account` is granted `role`. `sender` is the account that originated the contract call, an admin role bearer except when using {AccessControl-_setupRole}.
+
+### RoleRevoked event
+
+```solidity
+event RoleRevoked(bytes32 indexed role, address indexed account, address indexed sender);
+```
+
+
+Emitted when `account` is revoked `role`. `sender` is the account that originated the contract call:   - if using `revokeRole`, it is the admin role bearer   - if using `renounceRole`, it is the role bearer (i.e. `account`)
 
 ### SetRecipients event
 
@@ -117,24 +142,6 @@ error NullAddressError();
 
 Throw when submitted recipient with address(0)
 
-### OnlyControllerError error
-
-```solidity
-error OnlyControllerError();
-```
-
-
-Throw when sender is not controller
-
-### OnlyDistributorError error
-
-```solidity
-error OnlyDistributorError();
-```
-
-
-Throw when if sender is not distributor
-
 ### RecipientAlreadyAddedError error
 
 ```solidity
@@ -143,15 +150,6 @@ error RecipientAlreadyAddedError();
 
 
 Throw if recipient is already in contract
-
-### RenounceOwnershipForbidden error
-
-```solidity
-error RenounceOwnershipForbidden();
-```
-
-
-Throw when renounce ownership is called
 
 ### TooLowValueToRedistribute error
 
@@ -173,6 +171,15 @@ Throw when transaction fails
 
 ## Functions info
 
+### ADMIN_ROLE (0x75b238fc)
+
+```solidity
+function ADMIN_ROLE() external view returns (bytes32);
+```
+
+
+Role identifier for the distributor role
+
 ### AUTO_DISTRIBUTION_MAX_RECIPIENTS (0x325bc8e9)
 
 ```solidity
@@ -191,23 +198,29 @@ function BASIS_POINT() external view returns (uint256);
 
 Measurement unit 10000000 = 100%.
 
-### controller (0xf77c4791)
+### CONTROLLER_ROLE (0x092c5b3b)
 
 ```solidity
-function controller() external view returns (address);
+function CONTROLLER_ROLE() external view returns (bytes32);
 ```
 
 
-Controller address
+Role identifier for the controller role
 
-### distributors (0xcc642784)
+### DEFAULT_ADMIN_ROLE (0xa217fddf)
 
 ```solidity
-function distributors(address) external view returns (bool);
+function DEFAULT_ADMIN_ROLE() external view returns (bytes32);
+```
+
+### DISTRIBUTOR_ROLE (0xf0bd87cc)
+
+```solidity
+function DISTRIBUTOR_ROLE() external view returns (bytes32);
 ```
 
 
-distributorAddress => isDistributor
+Role identifier for the distributor role
 
 ### factory (0xc45a0155)
 
@@ -217,6 +230,51 @@ function factory() external view returns (address);
 
 
 Factory address.
+
+### getRoleAdmin (0x248a9ca3)
+
+```solidity
+function getRoleAdmin(bytes32 role) external view returns (bytes32);
+```
+
+
+Returns the admin role that controls `role`. See {grantRole} and {revokeRole}. To change a role's admin, use {_setRoleAdmin}.
+
+### getRoleMember (0x9010d07c)
+
+```solidity
+function getRoleMember(bytes32 role, uint256 index) external view returns (address);
+```
+
+
+Returns one of the accounts that have `role`. `index` must be a value between 0 and {getRoleMemberCount}, non-inclusive. Role bearers are not sorted in any particular way, and their ordering may change at any point. WARNING: When using {getRoleMember} and {getRoleMemberCount}, make sure you perform all queries on the same block. See the following https://forum.openzeppelin.com/t/iterating-over-elements-on-enumerableset-in-openzeppelin-contracts/2296[forum post] for more information.
+
+### getRoleMemberCount (0xca15c873)
+
+```solidity
+function getRoleMemberCount(bytes32 role) external view returns (uint256);
+```
+
+
+Returns the number of accounts that have `role`. Can be used together with {getRoleMember} to enumerate all bearers of a role.
+
+### grantRole (0x2f2ff15d)
+
+```solidity
+function grantRole(bytes32 role, address account) external;
+```
+
+
+Grants `role` to `account`. If `account` had not been already granted `role`, emits a {RoleGranted} event. Requirements: - the caller must have ``role``'s admin role. May emit a {RoleGranted} event.
+
+### hasRole (0x91d14854)
+
+```solidity
+function hasRole(bytes32 role, address account) external view returns (bool);
+```
+
+
+Returns `true` if `account` has been granted `role`.
 
 ### initialize (0x9004963b)
 
@@ -286,15 +344,6 @@ function numberOfRecipients() external view returns (uint256);
 
 External function to return number of recipients.
 
-### owner (0x8da5cb5b)
-
-```solidity
-function owner() external view returns (address);
-```
-
-
-Returns the address of the current owner.
-
 ### platformFee (0x26232a2e)
 
 ```solidity
@@ -347,14 +396,23 @@ Parameters:
 | :----- | :------ | :------------------------------------------- |
 | _token | address | Address of the ERC20 token to be distribute. |
 
-### renounceOwnership (0x715018a6)
+### renounceRole (0x36568abe)
 
 ```solidity
-function renounceOwnership() external view;
+function renounceRole(bytes32 role, address account) external;
 ```
 
 
-Leaves the contract without owner. It will not be possible to call `onlyOwner` functions anymore. Can only be called by the current owner. NOTE: Renouncing ownership is forbidden for RSC contract.
+Revokes `role` from the calling account. Roles are often managed via {grantRole} and {revokeRole}: this function's purpose is to provide a mechanism for accounts to lose their privileges if they are compromised (such as when a trusted device is misplaced). If the calling account had been revoked `role`, emits a {RoleRevoked} event. Requirements: - the caller must be `account`. May emit a {RoleRevoked} event.
+
+### revokeRole (0xd547741f)
+
+```solidity
+function revokeRole(bytes32 role, address account) external;
+```
+
+
+Revokes `role` from `account`. If `account` had been granted `role`, emits a {RoleRevoked} event. Requirements: - the caller must have ``role``'s admin role. May emit a {RoleRevoked} event.
 
 ### setAutoNativeCurrencyDistribution (0x3d39e377)
 
@@ -371,39 +429,6 @@ Parameters:
 | Name                              | Type | Description                                                          |
 | :-------------------------------- | :--- | :------------------------------------------------------------------- |
 | _isAutoNativeCurrencyDistribution | bool | Bool switching whether auto native currency distribution is enabled. |
-
-### setController (0x92eefe9b)
-
-```solidity
-function setController(address _controller) external;
-```
-
-
-External function to set controller address.
-
-
-Parameters:
-
-| Name        | Type    | Description                |
-| :---------- | :------ | :------------------------- |
-| _controller | address | Address of new controller. |
-
-### setDistributor (0xd59ba0df)
-
-```solidity
-function setDistributor(address _distributor, bool _isDistributor) external;
-```
-
-
-External function to set distributor address.
-
-
-Parameters:
-
-| Name           | Type    | Description                                             |
-| :------------- | :------ | :------------------------------------------------------ |
-| _distributor   | address | Address of new distributor.                             |
-| _isDistributor | bool    | Bool indicating whether address is / isn't distributor. |
 
 ### setImmutableRecipients (0x50a2f6c8)
 
@@ -462,11 +487,11 @@ Parameters:
 | :---------- | :------ | :---------------------------------------------------------------------- |
 | _recipients | tuple[] | Array of `RecipientData` structs with recipient address and percentage. |
 
-### transferOwnership (0xf2fde38b)
+### supportsInterface (0x01ffc9a7)
 
 ```solidity
-function transferOwnership(address newOwner) external;
+function supportsInterface(bytes4 interfaceId) external view returns (bool);
 ```
 
 
-Transfers ownership of the contract to a new account (`newOwner`). Can only be called by the current owner.
+See {IERC165-supportsInterface}.

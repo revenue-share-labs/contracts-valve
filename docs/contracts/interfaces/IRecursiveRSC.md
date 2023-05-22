@@ -7,10 +7,10 @@ License: BSL 1.1
 
 ## Functions info
 
-### distributors (0xcc642784)
+### hasRole (0x91d14854)
 
 ```solidity
-function distributors(address _distributor) external returns (bool);
+function hasRole(bytes32 _roleId, address _distributor) external returns (bool);
 ```
 
 ### isAutoNativeCurrencyDistribution (0x0808e1c6)

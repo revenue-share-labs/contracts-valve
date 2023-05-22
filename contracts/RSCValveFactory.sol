@@ -3,12 +3,12 @@
 pragma solidity 0.8.20;
 
 import "@openzeppelin/contracts/proxy/Clones.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/access/AccessControl.sol";
 import "./RSCValve.sol";
 
 /// @title RSCValve factory contract.
 /// @notice Used to deploy RSCValve contracts.
-contract RSCValveFactory is Ownable {
+contract RSCValveFactory is AccessControl {
     /// Measurement unit 10000000 = 100%.
     uint256 public constant BASIS_POINT = 10000000;
 
@@ -69,6 +69,9 @@ contract RSCValveFactory is Ownable {
      */
     constructor() {
         contractImplementation = new RSCValve();
+        // Grant the contract deployer the default admin role: it will be able
+        // to grant and revoke any roles
+        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
     }
 
     /**
@@ -114,10 +117,10 @@ contract RSCValveFactory is Ownable {
     }
 
     /**
-     * @dev Only Owner function for setting platform fee.
+     * @dev Admin function for setting platform fee.
      * @param _fee Percentage define platform fee 100% == BASIS_POINT.
      */
-    function setPlatformFee(uint256 _fee) external onlyOwner {
+    function setPlatformFee(uint256 _fee) external onlyRole(DEFAULT_ADMIN_ROLE) {
         if (_fee > FEE_BOUND || _fee == platformFee) {
             revert InvalidPercentageError(_fee);
         }
@@ -126,10 +129,12 @@ contract RSCValveFactory is Ownable {
     }
 
     /**
-     * @dev Owner function for setting platform fee.
+     * @dev Admin function for setting platform fee.
      * @param _platformWallet New native currency wallet which will receive fee.
      */
-    function setPlatformWallet(address payable _platformWallet) external onlyOwner {
+    function setPlatformWallet(
+        address payable _platformWallet
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
         if (_platformWallet == address(0)) {
             revert NullAddressError();
         }
